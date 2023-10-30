@@ -1,15 +1,15 @@
-use std::io::{self, Write};
+// use std::io::{self, Write};
 
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
-use serde_json::from_str;
 use std::sync::{Arc, Mutex};
 use tokio::task;
 
 use crate::common::{fetch_data, fetch_with_exponential_backoff};
 
 // - T_RHSTU_MEDICAMENTO - "ID_MEDICAMENTO","NM_MEDICAMENTO","DS_DETALHADA_MEDICAMENTO","NR_CODIGO_BARRAS","DT_CADASTRO","NM_USUARIO"
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct Medicine {
     pub(crate) ID_MEDICAMENTO: u32,
     pub(crate) NM_MEDICAMENTO: String,
@@ -21,6 +21,7 @@ pub(crate) struct Medicine {
 
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
 #[derive(Deserialize, Debug, Serialize)]
+#[allow(non_snake_case)]
 pub(crate) struct MedicalPrescription {
     pub(crate) ID_PRESCRICAO_MEDICA: u32,
     pub(crate) ID_UNID_HOSPITAL: u32,
@@ -47,7 +48,7 @@ struct MedicineCategoriesApi {
 }
 
 #[derive(Deserialize, Debug, Serialize)]
-
+#[allow(non_snake_case)]
 struct MedicineApi {
     content: Vec<MedicineApiContent>,
     totalElements: usize,
@@ -61,6 +62,7 @@ struct MedicineApi {
 }
 
 #[derive(Deserialize, Debug, Serialize)]
+#[allow(non_snake_case)]
 struct MedicineApiContent {
     idProduto: u32,
     numeroRegistro: String,
@@ -91,7 +93,7 @@ async fn get_medicine_categories() -> Vec<usize> {
 }
 
 //  GET https://bula.vercel.app/medicamentos?categoria=9&pagina=1000
-pub(crate) async fn get_medicines() -> usize {
+pub(crate) async fn get_medicines() -> Vec<Medicine> {
     let category_ids = get_medicine_categories().await;
     let client = reqwest::Client::new();
 
@@ -124,12 +126,19 @@ pub(crate) async fn get_medicines() -> usize {
         }
     } // Mutex guard and writer are dropped here
 
-    let length = aggregated_results.lock().unwrap().len();
-    length
+    let locked_results = aggregated_results.lock().unwrap();
+
+    let mut medicines: Vec<Medicine> = Vec::new();
+
+    for medicine_data in locked_results.iter() {
+        medicines.push(medicine_data.clone());
+    }
+
+    medicines
 }
 
 async fn process_category(client: &reqwest::Client, category_id: usize) -> Vec<Medicine> {
-    println!("\nCategory: {}", category_id);
+    // println!("\nCategory: {}", category_id);
     let url_first = format!(
         "https://bula.vercel.app/medicamentos?categoria={}",
         category_id
@@ -139,8 +148,8 @@ async fn process_category(client: &reqwest::Client, category_id: usize) -> Vec<M
     let mut medicines = Vec::new();
 
     for page in 1..body_first.totalPages {
-        print!("\r{}/{} ", page, body_first.totalPages);
-        io::stdout().flush().unwrap();
+        // print!("\r{}/{} ", page, body_first.totalPages);
+        // io::stdout().flush().unwrap();
 
         let url = format!(
             "https://bula.vercel.app/medicamentos?categoria={}&pagina={}",
@@ -173,12 +182,7 @@ async fn process_category(client: &reqwest::Client, category_id: usize) -> Vec<M
 
 // MedicalPrescription
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
-pub(crate) fn generate_medical_prescription(
-    total: usize,
-    medicines: Vec<Medicine>,
-) -> Vec<MedicalPrescription> {
-    let mut medical_prescriptions: Vec<MedicalPrescription> = Vec::new();
-
+pub(crate) fn generate_medical_prescription(total: usize, medicines: Vec<Medicine>) {
     let mut writer = csv::Writer::from_path("data/medical_prescription.csv").unwrap();
 
     for i in 0..total {
@@ -198,8 +202,5 @@ pub(crate) fn generate_medical_prescription(
         };
 
         writer.serialize(&medical_prescription).unwrap();
-
-        medical_prescriptions.push(medical_prescription);
     }
-    medical_prescriptions
 }

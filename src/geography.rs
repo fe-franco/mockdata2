@@ -42,7 +42,7 @@ pub(crate) async fn generate_states(client: Client) -> Result<usize, anyhow::Err
     Ok(len)
 }
 
-pub(crate) async fn generate_cities(client: Client) -> Result<usize, anyhow::Error> {
+pub(crate) async fn generate_cities(client: Client) -> Result<Vec<City>, anyhow::Error> {
     println!("Generating cities...");
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
@@ -51,7 +51,7 @@ pub(crate) async fn generate_cities(client: Client) -> Result<usize, anyhow::Err
     let ibge_code_to_ddd = get_ibge_code_to_ddd()?;
     let json: Vec<Municipio> = fetch_data(&client, CITIES_URL).await?;
 
-    let mut len = 0;
+    let mut cities = Vec::new();
 
     for municipio in json.iter() {
         let city_data = City {
@@ -69,9 +69,9 @@ pub(crate) async fn generate_cities(client: Client) -> Result<usize, anyhow::Err
 
         writer.serialize(&city_data)?;
 
-        len += 1
+        cities.push(city_data);
     }
-    Ok(len)
+    Ok(cities)
 }
 
 fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
@@ -88,7 +88,22 @@ fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
     Ok(ibge_code_to_ddd)
 }
 
-pub(crate) async fn generate_neighborhoods(client: Client) -> Result<Vec<usize>, anyhow::Error> {
+pub(crate) fn get_ddds() -> Result<Vec<usize>, anyhow::Error> {
+    let mut ddds = Vec::new();
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b';')
+        .from_path("Codigos_Nacionais.csv")?;
+    for result in reader.deserialize() {
+        let record: HashMap<String, String> = result?;
+        let ddd = record.get("CN").unwrap();
+        ddds.push(ddd.parse::<usize>()?);
+    }
+    Ok(ddds)
+}
+
+pub(crate) async fn generate_neighborhoods(
+    client: Client,
+) -> Result<Vec<Neighborhood>, anyhow::Error> {
     println!("Generating neighborhoods...");
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
@@ -96,26 +111,37 @@ pub(crate) async fn generate_neighborhoods(client: Client) -> Result<Vec<usize>,
 
     let json: Vec<Distrito> = fetch_data(&client, NEIGHBORHOODS_URL).await?;
 
-    let mut ids: Vec<usize> = Vec::new();
+    let mut neighborhoods: Vec<Neighborhood> = Vec::new();
     for neighborhood in json.iter() {
         let neighborhood_data: Neighborhood = Neighborhood {
             ID_BAIRRO: neighborhood.id,
             ID_CIDADE: neighborhood.municipio.id,
             NM_BAIRRO: neighborhood.nome.clone(),
-            NM_ZONA_BAIRRO: neighborhood.municipio.microrregiao.nome.clone(),
+            NM_ZONA_BAIRRO: [
+                "CENTRO",
+                "ZONA LESTE",
+                "ZONA NORTE",
+                "ZONA OESTE",
+                "ZONA SUL",
+            ]
+            .choose(&mut rand::thread_rng())
+            .unwrap()
+            .to_string(),
+
             DT_CADASTRO: created_at.clone(),
             NM_USUARIO: created_by.clone(),
         };
 
         writer.serialize(&neighborhood_data)?;
 
-        ids.push(neighborhood.id.try_into().expect("cant fit into usize"));
+        neighborhoods.push(neighborhood_data);
     }
-    Ok(ids)
+
+    Ok(neighborhoods)
 }
 
 pub(crate) fn generate_address(
-    neighborhood: &Vec<usize>,
+    neighborhood: &Vec<Neighborhood>,
     total: usize,
 ) -> Result<Vec<Street>, csv::Error> {
     println!("Generating addresses...");
@@ -129,7 +155,8 @@ pub(crate) fn generate_address(
         let neighborhood_id: usize = neighborhood
             .choose(&mut rand::thread_rng())
             .unwrap()
-            .clone();
+            .clone()
+            .ID_BAIRRO as usize;
 
         let address_data: Street = Street {
             ID_LOGRADOURO: i.try_into().expect("cant fit into u32"),
@@ -163,6 +190,7 @@ struct Microrregiao {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 struct Mesorregiao {
     id: u32,
     nome: String,
@@ -192,6 +220,7 @@ struct Distrito {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 struct State {
     ID_ESTADO: u32,
     SG_ESTADO: String,
@@ -201,20 +230,22 @@ struct State {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct City {
-    ID_CIDADE: u32,
-    ID_ESTADO: u32,
+#[allow(non_snake_case)]
+pub(crate) struct City {
+    pub(crate) ID_CIDADE: u32,
+    pub(crate) ID_ESTADO: u32,
     NM_CIDADE: String,
     CD_IBGE: String,
-    NR_DDD: String,
+    pub(crate) NR_DDD: String,
     DT_CADASTRO: String,
     NM_USUARIO: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct Neighborhood {
-    ID_BAIRRO: u32,
-    ID_CIDADE: u32,
+#[allow(non_snake_case)]
+pub(crate) struct Neighborhood {
+    pub(crate) ID_BAIRRO: u32,
+    pub(crate) ID_CIDADE: u32,
     NM_BAIRRO: String,
     NM_ZONA_BAIRRO: String,
     DT_CADASTRO: String,
@@ -222,8 +253,9 @@ struct Neighborhood {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct Street {
-    ID_LOGRADOURO: u32,
+    pub(crate) ID_LOGRADOURO: u32,
     ID_BAIRRO: u32,
     NM_LOGRADOURO: String,
     NR_CEP: String,

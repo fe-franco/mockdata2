@@ -43,16 +43,24 @@ pub(crate) fn random_cnpj() -> String {
     cnpj
 }
 
-pub(crate) fn random_br_phone() -> String {
-    // returns a valid BR phone number
+pub(crate) fn random_br_phone() -> u32 {
     let mut rng = rand::thread_rng();
-    let phone: String = format!(
-        "({:02}) 9{:04}-{:04}",
-        rng.gen_range(0..99),
-        rng.gen_range(0..9999),
-        rng.gen_range(0..9999)
+
+    // Generate a number between 9000_0000 and 9999_9999
+    let phone_number: u32 = rng.gen_range(9_000_0000..=9_999_9999);
+
+    phone_number
+}
+
+pub(crate) fn random_cep() -> String {
+    // returns a valid BR CEP
+    let mut rng = rand::thread_rng();
+    let cep: String = format!(
+        "{:05}-{:03}",
+        rng.gen_range(0..99999),
+        rng.gen_range(0..999)
     );
-    phone
+    cep
 }
 
 pub(crate) async fn fetch_data<T: for<'a> serde::de::Deserialize<'a>>(
@@ -74,7 +82,7 @@ pub(crate) async fn fetch_with_exponential_backoff<T: for<'a> serde::de::Deseria
             Ok(result) => return Ok(result),
             Err(error) => {
                 println!("Error: {}", url);
-                if delay > 120 {
+                if delay > 20 {
                     println!("This is taking too long, skipping...");
                     println!(
                         "last returned body: {}",

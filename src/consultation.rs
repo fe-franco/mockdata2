@@ -1,6 +1,10 @@
 use fake::{faker::name::en::Name, Fake};
+use indicatif::{ProgressBar, ProgressStyle};
 use rand::{seq::SliceRandom, Rng};
+use serde::{Deserialize, Serialize};
 // - T_RHSTU_CONSULTA - "ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE","ID_FUNC","DT_HR_CONSULTA","NR_CONSULTORIO","DT_CADASTRO","NM_USUARIO"
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct Consultation {
     pub(crate) ID_UNID_HOSPITAL: u32,
     pub(crate) ID_CONSULTA: u32,
@@ -13,6 +17,8 @@ pub(crate) struct Consultation {
 }
 
 // - T_RHSTU_FORMA_PAGAMENTO - "ID_FORMA_PAGTO","NM_FORMA_PAGTO","DS_FORMA_PAGTO","ST_FORMA_PAGTO","DT_CADASTRO","NM_USUARIO"
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct PaymentMethod {
     ID_FORMA_PAGTO: u32,
     NM_FORMA_PAGTO: String,
@@ -23,6 +29,8 @@ pub(crate) struct PaymentMethod {
 }
 
 // - T_RHSTU_CONSULTA_FORMA_PAGTO - "ID_CONSULTA_FORMA_PAGTO","ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE_PS","ID_FORMA_PAGTO","DT_PAGTO_CONSULTA","ST_PAGTO_CONSULTA","DT_CADASTRO","NM_USUARIO"
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct ConsultationPaymentMethod {
     ID_CONSULTA_FORMA_PAGTO: u32,
     ID_UNID_HOSPITAL: u32,
@@ -35,100 +43,118 @@ pub(crate) struct ConsultationPaymentMethod {
     NM_USUARIO: String,
 }
 
-pub(crate) fn generate_consultations(total: usize) -> Vec<Consultation> {
-    let mut consultations: Vec<Consultation> = Vec::with_capacity(total);
+pub(crate) async fn generate_consultations(
+    total: usize,
+    total_hospitals: usize,
+    total_patients: usize,
+) -> Vec<Consultation> {
+    let mut writer = csv::Writer::from_path("data/consultation.csv").unwrap();
+    let mut consultations: Vec<Consultation> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..total {
-        let consultation_id = rng.gen_range(1..100) as u32;
-        let consultation_patient_id = rng.gen_range(1..100) as u32;
-        let consultation_doctor_id = rng.gen_range(1..100) as u32;
-        let consultation_hospital_id = rng.gen_range(1..100) as u32;
-        let consultation_date = chrono::Local::now().to_string();
-        let consultation_room = rng.gen_range(1..100) as u32;
-        let consultation_register_date = chrono::Local::now().to_string();
+    let pb = ProgressBar::new(total as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    pb.set_message("Generating consultations...");
 
-        consultations.push(Consultation {
-            ID_UNID_HOSPITAL: consultation_hospital_id,
-            ID_CONSULTA: consultation_id,
-            ID_PACIENTE: consultation_patient_id,
-            ID_FUNC: consultation_doctor_id,
-            DT_HR_CONSULTA: consultation_date,
-            NR_CONSULTORIO: consultation_room.to_string(),
-            DT_CADASTRO: consultation_register_date,
+    for i in 0..total {
+        let consultation = Consultation {
+            ID_UNID_HOSPITAL: rng.gen_range(1..total_hospitals) as u32,
+            ID_CONSULTA: i as u32,
+            ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
+            ID_FUNC: rng.gen_range(1..100) as u32,
+            DT_HR_CONSULTA: chrono::Local::now().to_string(),
+            NR_CONSULTORIO: rng.gen_range(1..100).to_string(),
+            DT_CADASTRO: chrono::Local::now().to_string(),
             NM_USUARIO: "1".to_string(),
-        });
-    }
+        };
 
+        writer.serialize(&consultation).unwrap();
+        consultations.push(consultation);
+        pb.inc(1); // Increment the progress bar
+    }
+    pb.finish_with_message("Consultations generated!");
     consultations
 }
 
-pub(crate) fn generate_payment_methods(total: usize) -> Vec<PaymentMethod> {
-    let mut payment_methods: Vec<PaymentMethod> = Vec::with_capacity(total);
-    let mut rng = rand::thread_rng();
+pub(crate) async fn generate_payment_methods(total: usize) -> Vec<PaymentMethod> {
+    let mut writer = csv::Writer::from_path("data/payment_method.csv").unwrap();
+    let mut payment_methods: Vec<PaymentMethod> = Vec::new();
 
-    for _ in 0..total {
-        let payment_method_id = rng.gen_range(1..100) as u32;
-        let payment_method_name = Name().fake();
-        let payment_method_description = Name().fake();
-        let payment_method_status = ["Ativo", "Inativo"]
-            .choose(&mut rand::thread_rng())
+    let pb = ProgressBar::new(total as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
             .unwrap()
-            .to_string();
-        let payment_method_register_date = chrono::Local::now().to_string();
-
-        payment_methods.push(PaymentMethod {
-            ID_FORMA_PAGTO: payment_method_id,
-            NM_FORMA_PAGTO: payment_method_name,
-            DS_FORMA_PAGTO: payment_method_description,
-            ST_FORMA_PAGTO: payment_method_status,
-            DT_CADASTRO: payment_method_register_date,
+            .progress_chars("#>-"),
+    );
+    pb.set_message("Generating payment methods...");
+    for i in 0..total {
+        let payment_method = PaymentMethod {
+            ID_FORMA_PAGTO: i as u32,
+            NM_FORMA_PAGTO: Name().fake(),
+            DS_FORMA_PAGTO: Name().fake(),
+            ST_FORMA_PAGTO: ["Ativo", "Inativo"]
+                .choose(&mut rand::thread_rng())
+                .unwrap()
+                .to_string(),
+            DT_CADASTRO: chrono::Local::now().to_string(),
             NM_USUARIO: "1".to_string(),
-        });
-    }
+        };
 
+        writer.serialize(&payment_method).unwrap();
+        payment_methods.push(payment_method);
+        pb.inc(1); // Increment the progress bar
+    }
+    pb.finish_with_message("Payment methods generated!");
     payment_methods
 }
 
-pub(crate) fn generate_consultation_payment_methods(
+pub(crate) async fn generate_consultation_payment_methods(
     total: usize,
     payment_methods: Vec<PaymentMethod>,
     consultations: Vec<Consultation>,
-) -> Vec<ConsultationPaymentMethod> {
-    let mut consultation_payment_methods: Vec<ConsultationPaymentMethod> =
-        Vec::with_capacity(total);
+) {
     let mut rng = rand::thread_rng();
 
-    for _ in 0..total {
-        let consultation_payment_method_id = rng.gen_range(1..100) as u32;
-        let consultation_payment_method_consultation_id = consultations
-            .choose(&mut rand::thread_rng())
+    let mut writer = csv::Writer::from_path("data/consultation_payment_method.csv").unwrap();
+    let pb = ProgressBar::new(total as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
             .unwrap()
-            .ID_CONSULTA;
-        let consultation_payment_method_patient_id = rng.gen_range(1..100) as u32;
-        let consultation_payment_method_payment_method_id = payment_methods
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .ID_FORMA_PAGTO;
-        let consultation_payment_method_date = chrono::Local::now().to_string();
-        let consultation_payment_method_status = ["Ativo", "Inativo"]
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .to_string();
-        let consultation_payment_method_register_date = chrono::Local::now().to_string();
+            .progress_chars("#>-"),
+    );
+    pb.set_message("Generating consultation payment methods...");
+    for i in 0..total {
+        let payment_method = payment_methods.choose(&mut rng).unwrap();
 
-        consultation_payment_methods.push(ConsultationPaymentMethod {
-            ID_CONSULTA_FORMA_PAGTO: consultation_payment_method_id,
-            ID_UNID_HOSPITAL: 1,
-            ID_CONSULTA: consultation_payment_method_consultation_id,
-            ID_PACIENTE_PS: consultation_payment_method_patient_id,
-            ID_FORMA_PAGTO: consultation_payment_method_payment_method_id,
-            DT_PAGTO_CONSULTA: consultation_payment_method_date,
-            ST_PAGTO_CONSULTA: consultation_payment_method_status,
-            DT_CADASTRO: consultation_payment_method_register_date,
+        let consultation = consultations.choose(&mut rng).unwrap();
+
+        let consultation_payment_method = ConsultationPaymentMethod {
+            ID_CONSULTA_FORMA_PAGTO: i as u32,
+            ID_UNID_HOSPITAL: consultation.ID_UNID_HOSPITAL,
+            ID_CONSULTA: consultation.ID_CONSULTA,
+            ID_PACIENTE_PS: consultation.ID_PACIENTE,
+            ID_FORMA_PAGTO: payment_method.ID_FORMA_PAGTO,
+            DT_PAGTO_CONSULTA: chrono::Local::now().to_string(),
+            ST_PAGTO_CONSULTA: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
+            DT_CADASTRO: chrono::Local::now().to_string(),
             NM_USUARIO: "1".to_string(),
-        });
-    }
+        };
 
-    consultation_payment_methods
+        writer.serialize(&consultation_payment_method).unwrap();
+        pb.inc(1); // Increment the progress bar
+    }
+    pb.finish_with_message("Consultation payment methods generated!");
 }

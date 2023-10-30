@@ -8,12 +8,15 @@ use fake::{
     Fake,
 };
 use rand::{seq::SliceRandom, Rng};
-use rayon::prelude::IndexedParallelIterator;
 use serde::{Deserialize, Serialize};
 
-use crate::common::{random_cpf, random_rg};
+use crate::{
+    common::{random_cep, random_cpf, random_rg},
+    geography::{City, Neighborhood},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct Hospital {
     pub(crate) ID_UNID_HOSPITAL: u32,
     pub(crate) NM_UNID_HOSPITALAR: String,
@@ -28,6 +31,8 @@ pub(crate) struct Hospital {
     pub(crate) NM_USUARIO: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
 pub(crate) struct HospitalAddress {
     pub(crate) ID_UNID_HOSPITAL: u32,
     pub(crate) ID_BAIRRO: u32,
@@ -40,6 +45,8 @@ pub(crate) struct HospitalAddress {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
+
 struct Employee {
     ID_FUNC: u32,
     ID_SUPERIOR: u32,
@@ -55,6 +62,8 @@ struct Employee {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
+
 struct Doctor {
     ID_FUNC: u32,
     NR_CRM: String,
@@ -64,6 +73,8 @@ struct Doctor {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
+
 struct Driver {
     ID_FUNC: u32,
     NR_CNH: String,
@@ -73,7 +84,7 @@ struct Driver {
     NM_USUARIO: String,
 }
 
-pub(crate) fn generate_hospital(total: usize) -> usize {
+pub(crate) async fn generate_hospital(total: usize) -> usize {
     let mut len = 0;
 
     let mut writer = csv::Writer::from_path("data/hospital.csv").unwrap();
@@ -100,8 +111,45 @@ pub(crate) fn generate_hospital(total: usize) -> usize {
     len
 }
 
-pub(crate) fn generate_employee(total: usize) -> Vec<u32> {
-    let mut employeeIds: Vec<u32> = Vec::new();
+pub(crate) async fn generate_hospital_address(
+    total: usize,
+    neighborhoods: Vec<Neighborhood>,
+    cities: Vec<City>,
+) -> usize {
+    let mut len = 0;
+
+    let mut writer = csv::Writer::from_path("data/hospital_address.csv").unwrap();
+    let mut rng = rand::thread_rng();
+    for i in 0..total {
+        let neighborhood = neighborhoods.choose(&mut rng).unwrap().clone();
+
+        // find city and state ids from neighborhood
+        let city = cities
+            .iter()
+            .find(|&c| c.ID_CIDADE == neighborhood.ID_CIDADE)
+            .unwrap();
+
+        let hospital_address = HospitalAddress {
+            ID_UNID_HOSPITAL: i as u32,
+            ID_BAIRRO: neighborhood.ID_BAIRRO,
+            ID_CIDADE: city.ID_CIDADE,
+            ID_ESTADO: city.ID_ESTADO,
+            NR_CEP: random_cep(),
+            NR_DDD: city.NR_DDD.clone(),
+            DT_CADASTRO: Date().fake(),
+            NM_USUARIO: Name().fake(),
+        };
+
+        writer.serialize(hospital_address).unwrap();
+
+        len += 1;
+    }
+
+    len
+}
+
+pub(crate) async fn generate_employee(total: usize) -> Vec<u32> {
+    let mut employee_ids: Vec<u32> = Vec::new();
 
     let mut writer = csv::Writer::from_path("data/employee.csv").unwrap();
 
@@ -125,14 +173,14 @@ pub(crate) fn generate_employee(total: usize) -> Vec<u32> {
 
         writer.serialize(employee).unwrap();
 
-        employeeIds.push(i as u32);
+        employee_ids.push(i as u32);
     }
 
-    employeeIds
+    employee_ids
 }
 
-pub(crate) fn generate_doctor(employeeIds: &mut Vec<u32>, total: usize) -> usize {
-    if total > employeeIds.len() {
+pub(crate) fn generate_doctor(employee_ids: &mut Vec<u32>, total: usize) -> usize {
+    if total > employee_ids.len() {
         panic!("Not enough employees to generate doctors")
     }
 
@@ -142,7 +190,7 @@ pub(crate) fn generate_doctor(employeeIds: &mut Vec<u32>, total: usize) -> usize
 
     for i in 0..total {
         let doctor = Doctor {
-            ID_FUNC: employeeIds[i],
+            ID_FUNC: employee_ids[i],
             NR_CRM: rand::thread_rng().gen_range(1000000..9999999).to_string(),
             DS_ESPECIALIDADE: Name().fake(),
             DT_CADASTRO: Date().fake(),
@@ -151,15 +199,15 @@ pub(crate) fn generate_doctor(employeeIds: &mut Vec<u32>, total: usize) -> usize
 
         writer.serialize(doctor).unwrap();
 
-        employeeIds.remove(i);
+        employee_ids.remove(i);
         len += 1;
     }
 
     len
 }
 
-pub(crate) fn generate_driver(employeeIds: &mut Vec<u32>, total: usize) -> usize {
-    if total > employeeIds.len() {
+pub(crate) fn generate_driver(employee_ids: &mut Vec<u32>, total: usize) -> usize {
+    if total > employee_ids.len() {
         panic!("Not enough employees to generate drivers")
     }
 
@@ -169,7 +217,7 @@ pub(crate) fn generate_driver(employeeIds: &mut Vec<u32>, total: usize) -> usize
 
     for i in 0..total {
         let driver = Driver {
-            ID_FUNC: employeeIds[i],
+            ID_FUNC: employee_ids[i],
             NR_CNH: rand::thread_rng().gen_range(1000000..9999999).to_string(),
             NM_CATEGORIA_CNH: ["A", "B", "C", "D", "E"]
                 .choose(&mut rand::thread_rng())
@@ -182,7 +230,7 @@ pub(crate) fn generate_driver(employeeIds: &mut Vec<u32>, total: usize) -> usize
 
         writer.serialize(driver).unwrap();
 
-        employeeIds.remove(i);
+        employee_ids.remove(i);
         len += 1;
     }
 
