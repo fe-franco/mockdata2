@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use fake::{
     faker::{
         address::en::{BuildingNumber, StreetName},
@@ -7,11 +9,13 @@ use fake::{
     },
     Fake,
 };
+use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{random_cep, random_cpf, random_rg},
+    common::{random_cep, random_cpf, random_rg, ProgressBarHelper},
     geography::{City, Neighborhood},
 };
 
@@ -84,10 +88,17 @@ struct Driver {
     NM_USUARIO: String,
 }
 
-pub(crate) async fn generate_hospital(total: usize) -> usize {
+pub(crate) async fn generate_hospital(
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> usize {
     let mut len = 0;
 
     let mut writer = csv::Writer::from_path("data/hospital.csv").unwrap();
+
+    let pb_helper = ProgressBarHelper::new(m, total, "Hospitals:".to_string());
+    let pb = &pb_helper.pb;
 
     for i in 0..total {
         let hospital = Hospital {
@@ -106,7 +117,11 @@ pub(crate) async fn generate_hospital(total: usize) -> usize {
 
         writer.serialize(hospital).unwrap();
         len += 1;
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     len
 }
@@ -115,11 +130,17 @@ pub(crate) async fn generate_hospital_address(
     total: usize,
     neighborhoods: Vec<Neighborhood>,
     cities: Vec<City>,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) -> usize {
     let mut len = 0;
 
     let mut writer = csv::Writer::from_path("data/hospital_address.csv").unwrap();
     let mut rng = rand::thread_rng();
+
+    let pb_helper = ProgressBarHelper::new(m, total, "Hospital Addresses:".to_string());
+    let pb = &pb_helper.pb;
+
     for i in 0..total {
         let neighborhood = neighborhoods.choose(&mut rng).unwrap().clone();
 
@@ -143,84 +164,137 @@ pub(crate) async fn generate_hospital_address(
         writer.serialize(hospital_address).unwrap();
 
         len += 1;
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     len
 }
 
-pub(crate) async fn generate_employee(total: usize) -> Vec<u32> {
-    let mut employee_ids: Vec<u32> = Vec::new();
-
+pub(crate) async fn generate_employee(
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> Vec<u32> {
     let mut writer = csv::Writer::from_path("data/employee.csv").unwrap();
 
-    for i in 0..total {
-        let employee = Employee {
-            ID_FUNC: i as u32,
-            ID_SUPERIOR: i as u32,
-            NM_FUNC: Name().fake(),
-            DS_CARGO: Name().fake(),
-            DT_NASCIMENTO: Date().fake(),
-            VL_SALARIO: rand::thread_rng().gen_range(1000.0..10000.0).to_string(),
-            NR_RG: random_rg(),
-            NR_CPF: random_cpf(),
-            ST_FUNC: ["A", "I"]
-                .choose(&mut rand::thread_rng())
-                .unwrap()
-                .to_string(),
-            DT_CADASTRO: Date().fake(),
-            NM_USUARIO: Name().fake(),
-        };
+    let pb_helper = ProgressBarHelper::new(m, total, "Employees:".to_string());
+    let pb = &pb_helper.pb;
 
+    let employees: Vec<Employee> = (0..total)
+        .into_par_iter()
+        .map(|i| {
+            let mut rng = rand::thread_rng();
+            let employee = Employee {
+                ID_FUNC: i as u32,
+                ID_SUPERIOR: i as u32,
+                NM_FUNC: Name().fake(),
+                DS_CARGO: Name().fake(),
+                DT_NASCIMENTO: Date().fake(),
+                VL_SALARIO: rng.gen_range(1000.0..10000.0).to_string(),
+                NR_RG: random_rg(),
+                NR_CPF: random_cpf(),
+                ST_FUNC: ["A", "I"].choose(&mut rng).unwrap().to_string(),
+                DT_CADASTRO: Date().fake(),
+                NM_USUARIO: Name().fake(),
+            };
+
+            employee
+        })
+        .collect();
+
+    for employee in &employees {
         writer.serialize(employee).unwrap();
-
-        employee_ids.push(i as u32);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+    
+    pb_helper.finish();
 
-    employee_ids
+    employees.into_par_iter().map(|e| e.ID_FUNC).collect()
 }
 
-pub(crate) fn generate_doctor(employee_ids: &mut Vec<u32>, total: usize) -> usize {
-    if total > employee_ids.len() {
-        panic!("Not enough employees to generate doctors")
+pub(crate) async fn generate_doctor(
+    employee_ids: Arc<Mutex<Vec<u32>>>,
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> usize {
+    let mut employee_ids_guard = employee_ids.lock().unwrap();
+
+    if total > employee_ids_guard.len() {
+        panic!("Not enough employees to generate doctors");
     }
 
-    let mut len = 0;
-
     let mut writer = csv::Writer::from_path("data/doctor.csv").unwrap();
+    let pb_helper = ProgressBarHelper::new(m, total, "Doctors:".to_string());
+    let pb = &pb_helper.pb;
+
+    let mut rng = rand::thread_rng(); // Reuse the random number generator
+    let mut buffer = Vec::with_capacity(1000); // For example, a batch size of 1000
 
     for i in 0..total {
         let doctor = Doctor {
-            ID_FUNC: employee_ids[i],
-            NR_CRM: rand::thread_rng().gen_range(1000000..9999999).to_string(),
+            ID_FUNC: employee_ids_guard[i],
+            NR_CRM: rng.gen_range(1000000..9999999).to_string(),
             DS_ESPECIALIDADE: Name().fake(),
             DT_CADASTRO: Date().fake(),
             NM_USUARIO: Name().fake(),
         };
 
-        writer.serialize(doctor).unwrap();
+        buffer.push(doctor);
 
-        employee_ids.remove(i);
-        len += 1;
+        if buffer.len() == 1000 {
+            for doc in &buffer {
+                writer.serialize(doc).unwrap();
+            }
+            buffer.clear();
+        }
+
+        pb.inc(1);
+        main_pb.inc(1);
     }
 
-    len
+    // Write any remaining records in the buffer
+    for doc in &buffer {
+        writer.serialize(doc).unwrap();
+    }
+
+    // Remove used employee IDs after the loop to avoid shifting elements multiple times
+    employee_ids_guard.drain(0..total);
+
+    pb_helper.finish();
+
+    total
 }
 
-pub(crate) fn generate_driver(employee_ids: &mut Vec<u32>, total: usize) -> usize {
-    if total > employee_ids.len() {
-        panic!("Not enough employees to generate drivers")
+pub(crate) async fn generate_driver(
+    employee_ids: Arc<Mutex<Vec<u32>>>,
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> usize {
+    let mut employee_ids_guard = employee_ids.lock().unwrap();
+
+    if total > employee_ids_guard.len() {
+        panic!("Not enough employees to generate drivers");
     }
 
-    let mut len = 0;
-
     let mut writer = csv::Writer::from_path("data/driver.csv").unwrap();
+    let pb_helper = ProgressBarHelper::new(m, total, "Drivers:".to_string());
+    let pb = &pb_helper.pb;
+
+    let mut rng = rand::thread_rng(); // Reuse the random number generator
+    let mut buffer = Vec::with_capacity(1000); // For example, a batch size of 1000
 
     for i in 0..total {
         let driver = Driver {
-            ID_FUNC: employee_ids[i],
-            NR_CNH: rand::thread_rng().gen_range(1000000..9999999).to_string(),
+            ID_FUNC: employee_ids_guard[i],
+            NR_CNH: rng.gen_range(1000000..9999999).to_string(),
             NM_CATEGORIA_CNH: ["A", "B", "C", "D", "E"]
-                .choose(&mut rand::thread_rng())
+                .choose(&mut rng)
                 .unwrap()
                 .to_string(),
             DT_VALIDADE_CNH: Date().fake(),
@@ -228,11 +302,28 @@ pub(crate) fn generate_driver(employee_ids: &mut Vec<u32>, total: usize) -> usiz
             NM_USUARIO: Name().fake(),
         };
 
-        writer.serialize(driver).unwrap();
+        buffer.push(driver);
 
-        employee_ids.remove(i);
-        len += 1;
+        if buffer.len() == 1000 {
+            for drv in &buffer {
+                writer.serialize(drv).unwrap();
+            }
+            buffer.clear();
+        }
+
+        pb.inc(1);
+        main_pb.inc(1);
     }
 
-    len
+    // Write any remaining records in the buffer
+    for drv in &buffer {
+        writer.serialize(drv).unwrap();
+    }
+
+    // Remove used employee IDs after the loop to avoid shifting elements multiple times
+    employee_ids_guard.drain(0..total);
+
+    pb_helper.finish();
+
+    total
 }

@@ -44,7 +44,9 @@
 // It's not about the quantity, but the quality of data and the relationships between them. A smaller, well-structured dataset is preferred over a large, unstructured one.
 // That being said the goal is to generate at least 10 million rows of data in total (across all tables).
 
+mod bulario;
 mod common;
+mod constants;
 mod consultation;
 mod geography;
 mod health_plan;
@@ -57,19 +59,24 @@ use crate::geography::{
 };
 use crate::medicine::{generate_medical_prescription, get_medicines};
 use crate::patient::generate_patients;
-use indicatif::{ProgressBar, ProgressStyle};
+use anyhow::Result;
+use common::{create_data_dir, format_number, format_time};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::Client;
+use std::sync::{Arc, Mutex}; // Use anyhow for better error handling
 
-const TOTAL_ENTRIES: usize = 10000000;
-use anyhow::Result; // Use anyhow for better error handling
+const TOTAL_ENTRIES: usize = 10_000_000;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let pb = ProgressBar::new(TOTAL_ENTRIES as u64);
+    create_data_dir();
+    let m = Arc::new(MultiProgress::new());
+    let pb = Arc::new(m.add(ProgressBar::new(TOTAL_ENTRIES as u64)));
+    pb.set_prefix("Total:");
     pb.set_style(
         ProgressStyle::default_bar()
             .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+                "{prefix} {spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
             )
             .unwrap()
             .progress_chars("#>-"),
@@ -77,142 +84,217 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let client = Client::new();
 
-    // Spawn initial tasks
-    let states_task = tokio::spawn(generate_states(client.clone()));
-    let cities_task = tokio::spawn(generate_cities(client.clone()));
-    let neighborhoods_task = tokio::spawn(generate_neighborhoods(client.clone()));
-    let medicines_task = tokio::spawn(get_medicines());
+    // Initial tasks
+    let states_task = tokio::spawn(generate_states(client.clone(), m.clone(), pb.clone()));
+    let cities_task = tokio::spawn(generate_cities(client.clone(), m.clone(), pb.clone()));
+    let neighborhoods_task = tokio::spawn(generate_neighborhoods(
+        client.clone(),
+        m.clone(),
+        pb.clone(),
+    ));
+    let medicines_task = tokio::spawn(get_medicines(m.clone(), pb.clone()));
 
-    // Await initial tasks
-    let (states, cities, neighborhoods, medicines) =
-        tokio::try_join!(states_task, cities_task, neighborhoods_task, medicines_task)?;
+    let (states, cities, neighborhoods) =
+        tokio::try_join!(states_task, cities_task, neighborhoods_task)?;
 
     let states = states?;
     let cities = cities?;
     let neighborhoods = neighborhoods?;
 
-    pb.inc(states as u64);
-    pb.inc(cities.len() as u64);
-    pb.inc(neighborhoods.len() as u64);
-
-    let address = generate_address(&neighborhoods, states + cities.len() + neighborhoods.len())?;
-    pb.inc(address.len() as u64);
-
-    let entries =
-        TOTAL_ENTRIES - ((states + cities.len() + neighborhoods.len() + address.len()) as usize);
-    let patient_related_allocation = (entries as f32 * 0.30) as usize;
-    let total_patients_contact_types = 3;
-    let total_patients = (patient_related_allocation - total_patients_contact_types) / 7;
-    generate_medical_prescription(total_patients, medicines);
-
-    // Spawn patient-related tasks concurrently
-    let addra = address.clone();
-    let patients_task = tokio::spawn(generate_patients(total_patients));
-    let patients_addresses_task =
-        tokio::spawn(patient::generate_patients_addresses(total_patients, addra));
-    let contact_types_task = tokio::spawn(patient::generate_contact_types(
-        total_patients_contact_types,
-    ));
-
-    // Await patient-related tasks that are needed for subsequent tasks
-    let (_patients, contact_types) = tokio::try_join!(patients_task, contact_types_task)?;
-
-    pb.inc(total_patients as u64);
-
-    let patient_contacts_task = tokio::spawn(patient::generate_patient_contacts(
-        total_patients,
-        contact_types,
-    ));
-    let emails_task = tokio::spawn(patient::generate_emails(total_patients));
-    let telephones_task = tokio::spawn(patient::generate_telephones(total_patients));
-
-    // Await remaining patient-related tasks
-    tokio::try_join!(
-        patients_addresses_task,
-        patient_contacts_task,
-        emails_task,
-        telephones_task
+    let address = generate_address(
+        &neighborhoods,
+        states + cities.len() + neighborhoods.len(),
+        m.clone(),
+        pb.clone(),
     )?;
 
-    pb.inc(total_patients as u64);
-    pb.inc(total_patients as u64);
-    pb.inc(total_patients as u64);
-    pb.inc(total_patients as u64);
+    let initial_entries = states + cities.len() + neighborhoods.len() + address.len();
+    let mut remaining_entries = TOTAL_ENTRIES - initial_entries;
 
-    let total_hospitals = (entries as f32 * 0.01) as usize;
+    // Patient-related tasks
+    let total_patients_contact_types = 3;
+    let total_patients = (((remaining_entries as f32 * 0.30).round() as usize
+        - total_patients_contact_types) as f32
+        / 3.0)
+        .round() as usize;
 
-    // Spawn hospital-related tasks concurrently
-    let hospitals_task = tokio::spawn(hospital::generate_hospital(total_hospitals));
-    let hospital_addresses_task = tokio::spawn(hospital::generate_hospital_address(
+    let patients_task = tokio::spawn(generate_patients(total_patients, m.clone(), pb.clone()));
+    let patient_address_task = tokio::spawn(patient::generate_patients_addresses(
+        total_patients,
+        address.clone(),
+        m.clone(),
+        pb.clone(),
+    ));
+    let contact_types_task = tokio::spawn(patient::generate_contact_types(
+        total_patients_contact_types,
+        m.clone(),
+        pb.clone(),
+    ));
+    let contact_types = tokio::try_join!(contact_types_task)?;
+
+    let patient_contact = tokio::spawn(patient::generate_patient_contacts(
+        total_patients,
+        contact_types.0,
+        m.clone(),
+        pb.clone(),
+    ));
+    let patient_email_task = tokio::spawn(patient::generate_emails(
+        total_patients,
+        m.clone(),
+        pb.clone(),
+    ));
+
+    let patient_telefone_task = tokio::spawn(patient::generate_telephones(
+        total_patients,
+        m.clone(),
+        pb.clone(),
+    ));
+
+    // Hospital-related tasks
+    let total_hospitals = 5000;
+    remaining_entries -= total_hospitals;
+    let hospitals_task = tokio::spawn(hospital::generate_hospital(
+        total_hospitals,
+        m.clone(),
+        pb.clone(),
+    ));
+
+    let hospital_address_taks = tokio::spawn(hospital::generate_hospital_address(
         total_hospitals,
         neighborhoods,
         cities,
+        m.clone(),
+        pb.clone(),
     ));
 
-    let total_employees = (entries as f32 * 0.01) as usize;
-    let employees_task = tokio::spawn(hospital::generate_employee(total_employees));
+    let total_employees = (total_hospitals * 200) as usize;
+    let total_doctors = (total_employees as f32 * 0.8).round() as usize;
+    let total_drivers = total_employees - total_doctors; // Adjust to ensure total_employees = total_doctors + total_drivers
 
-    // Await employee-related tasks that are needed for subsequent tasks
-    let mut employee_ids = employees_task.await?;
+    let employees_task = tokio::spawn(hospital::generate_employee(
+        total_employees,
+        m.clone(),
+        pb.clone(),
+    ));
 
-    let total_doctors = (total_employees as f32 * 0.2) as usize;
-    hospital::generate_doctor(&mut employee_ids, total_doctors);
-    let total_drivers = (total_employees as f32 * 0.2) as usize;
-    hospital::generate_driver(&mut employee_ids, total_drivers);
+    let employee_ids: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new(employees_task.await?));
 
-    // Await remaining hospital-related tasks
-    tokio::try_join!(hospitals_task, hospital_addresses_task)?;
+    let doctors_task = tokio::spawn(hospital::generate_doctor(
+        employee_ids.clone(),
+        total_doctors,
+        m.clone(),
+        pb.clone(),
+    ));
 
-    pb.inc(total_hospitals as u64);
-    pb.inc(total_hospitals as u64);
+    let drivers_task = tokio::spawn(hospital::generate_driver(
+        employee_ids,
+        total_drivers,
+        m.clone(),
+        pb.clone(),
+    ));
 
-    let total_consultations = (entries as f32 * 0.01) as usize;
-
-    // Spawn consultation-related tasks concurrently
+    // Consultation-related tasks
+    let total_consultations = total_patients; // One consultation per patient for simplicity
     let consultations_task = tokio::spawn(consultation::generate_consultations(
         total_consultations,
         total_hospitals,
         total_patients,
+        m.clone(),
+        pb.clone(),
     ));
-    let payment_methods_task = tokio::spawn(consultation::generate_payment_methods(total_patients));
-
-    // Await consultation-related tasks that are needed for subsequent tasks
+    let payment_methods_task = tokio::spawn(consultation::generate_payment_methods(
+        5,
+        m.clone(),
+        pb.clone(),
+    ));
     let (consultations, payment_methods) =
         tokio::try_join!(consultations_task, payment_methods_task)?;
 
     let consultation_payment_methods_task =
         tokio::spawn(consultation::generate_consultation_payment_methods(
-            total_consultations,
+            total_patients,
             payment_methods,
             consultations,
+            m.clone(),
+            pb.clone(),
         ));
 
-    // Await remaining consultation-related tasks
-    consultation_payment_methods_task.await?;
+    // Health plan-related tasks
+    let total_health_plans = (remaining_entries as f32 * 0.01).round() as usize;
+    let health_plans =
+        health_plan::generate_health_plans(total_health_plans, m.clone(), pb.clone());
 
-    pb.inc(total_consultations as u64);
-
-    // Spawn health plan-related tasks concurrently
-    let total_health_plans = (entries as f32 * 0.01) as usize;
-    let health_plans = health_plan::generate_health_plans(total_health_plans);
-
-    let patient_health_plans_task = tokio::spawn(health_plan::generate_patient_health_plans(
-        entries,
+    let health_plan_patient_task = tokio::spawn(health_plan::generate_patient_health_plans(
+        total_patients,
         health_plans,
         total_patients,
+        m.clone(),
+        pb.clone(),
     ));
 
-    // Await health plan-related tasks
-    tokio::try_join!(patient_health_plans_task)?;
+    // Medicine-related tasks
+    let medicines = medicines_task.await?;
 
-    pb.inc(total_health_plans as u64);
+    let generate_medical_prescription_task = tokio::spawn(generate_medical_prescription(
+        total_patients,
+        medicines,
+        m.clone(),
+        pb.clone(),
+    ));
 
-    println!(
-        "\nentries left: {} | entries generated: {} | percentage: {}%",
-        entries,
-        TOTAL_ENTRIES - entries,
-        (TOTAL_ENTRIES - entries) as f32 / TOTAL_ENTRIES as f32 * 100.0
+    // await all tasks
+    tokio::try_join!(
+        patients_task,
+        patient_address_task,
+        patient_contact,
+        patient_email_task,
+        patient_telefone_task,
+        hospitals_task,
+        hospital_address_taks,
+        doctors_task,
+        drivers_task,
+        consultation_payment_methods_task,
+        health_plan_patient_task,
+        generate_medical_prescription_task
+    )?;
+
+    let mut generated_entries = pb.position() as i32;
+    let mut discrepancy = TOTAL_ENTRIES as i32 - generated_entries;
+
+    // Here, you can adjust one of the categories to make up for the discrepancy. For simplicity, let's adjust the number of patients:
+    if discrepancy > 0 {
+        generate_patients(discrepancy as usize, m.clone(), pb.clone()).await;
+    }
+
+    generated_entries = pb.position() as i32;
+    discrepancy = TOTAL_ENTRIES as i32 - generated_entries;
+    let pb_final_time = pb.elapsed();
+
+    // Final progress bar
+    let r#final = format!(
+        "entries left: {} | entries generated: {} | percentage: {}% | time elapsed: {}",
+        format!("{}", format_number(discrepancy.into())),
+        format_number(generated_entries.into()),
+        format_number(
+            generated_entries
+                .checked_div(TOTAL_ENTRIES.try_into().unwrap())
+                .unwrap_or(0)
+                .checked_mul(100)
+                .unwrap_or(0)
+                .into()
+        ),
+        format_time(pb_final_time.as_secs())
     );
+
+    let final_pb = m.add(ProgressBar::new(1));
+    final_pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{prefix} {msg:.green}")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    final_pb.set_prefix("Final:");
+    final_pb.finish_with_message(r#final);
 
     Ok(())
 }

@@ -1,11 +1,14 @@
+use std::sync::Arc;
+
 use fake::{
     faker::{company::en::CompanyName, name::en::Name},
     Fake,
 };
+use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::common::{random_br_phone, random_cnpj};
+use crate::common::{random_br_phone, random_cnpj, ProgressBarHelper};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -37,9 +40,17 @@ pub(crate) struct PatientHealthPlan {
     NM_USUARIO: String,
 }
 
-pub(crate) fn generate_health_plans(total: usize) -> Vec<HealthPlan> {
+pub(crate) fn generate_health_plans(
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> Vec<HealthPlan> {
+    // println!("Generating health plans...");
     let mut health_plans: Vec<HealthPlan> = Vec::with_capacity(total);
     let mut writer = csv::Writer::from_path("data/health_plan.csv").unwrap();
+
+    let pb_helper = ProgressBarHelper::new(m, total, "Health Plans:".to_string());
+    let pb = &pb_helper.pb;
 
     for i in 0..total {
         let health_plan = HealthPlan {
@@ -59,7 +70,11 @@ pub(crate) fn generate_health_plans(total: usize) -> Vec<HealthPlan> {
         writer.serialize(&health_plan).unwrap();
 
         health_plans.push(health_plan);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     health_plans
 }
@@ -68,11 +83,17 @@ pub(crate) async fn generate_patient_health_plans(
     total: usize,
     health_plans: Vec<HealthPlan>,
     total_patients: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) -> Vec<PatientHealthPlan> {
+    // println!("Generating patient health plans...");
     let mut patient_health_plans: Vec<PatientHealthPlan> = Vec::with_capacity(total);
     let mut rng = rand::thread_rng();
 
     let mut writer = csv::Writer::from_path("data/patient_health_plan.csv").unwrap();
+
+    let pb_helper = ProgressBarHelper::new(m, total, "Patient Health Plans:".to_string());
+    let pb = &pb_helper.pb;
 
     for i in 0..total {
         let patient_health_plan = PatientHealthPlan {
@@ -92,7 +113,11 @@ pub(crate) async fn generate_patient_health_plans(
         writer.serialize(&patient_health_plan).unwrap();
 
         patient_health_plans.push(patient_health_plan);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     patient_health_plans
 }

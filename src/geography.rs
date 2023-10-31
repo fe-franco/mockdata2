@@ -3,12 +3,13 @@ use fake::{
     faker::address::en::{StreetName, ZipCode},
     Fake,
 };
+use indicatif::{MultiProgress, ProgressBar};
 use rand::seq::SliceRandom;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File};
+use std::{collections::HashMap, fs::File, sync::Arc};
 
-use crate::common::fetch_data;
+use crate::common::{fetch_data, ProgressBarHelper};
 
 const STATES_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/estados";
 const CITIES_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios";
@@ -23,11 +24,19 @@ fn create_csv_writer(path: &str) -> Result<Writer<File>, csv::Error> {
     csv::Writer::from_path(path)
 }
 
-pub(crate) async fn generate_states(client: Client) -> Result<usize, anyhow::Error> {
-    println!("Generating states...");
+pub(crate) async fn generate_states(
+    client: Client,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> Result<usize, anyhow::Error> {
     let json: Vec<UF> = fetch_data(&client, STATES_URL).await?;
+
     let mut writer = create_csv_writer("data/states.csv")?;
     let mut len: usize = 0;
+
+    let pb_helper = ProgressBarHelper::new(m, json.len(), "States:".to_string());
+    let pb = &pb_helper.pb;
+
     for state in json.iter() {
         let state_data = State {
             ID_ESTADO: state.id,
@@ -37,13 +46,20 @@ pub(crate) async fn generate_states(client: Client) -> Result<usize, anyhow::Err
             NM_USUARIO: CREATED_BY.to_string(),
         };
         writer.serialize(&state_data)?;
-        len += 1
+        len += 1;
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
+
     Ok(len)
 }
-
-pub(crate) async fn generate_cities(client: Client) -> Result<Vec<City>, anyhow::Error> {
-    println!("Generating cities...");
+pub(crate) async fn generate_cities(
+    client: Client,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> Result<Vec<City>, anyhow::Error> {
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
     let mut writer = csv::Writer::from_path("data/cities.csv")?;
@@ -52,6 +68,9 @@ pub(crate) async fn generate_cities(client: Client) -> Result<Vec<City>, anyhow:
     let json: Vec<Municipio> = fetch_data(&client, CITIES_URL).await?;
 
     let mut cities = Vec::new();
+
+    let pb_helper = ProgressBarHelper::new(m, json.len(), "Cities:".to_string());
+    let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
         let city_data = City {
@@ -70,7 +89,12 @@ pub(crate) async fn generate_cities(client: Client) -> Result<Vec<City>, anyhow:
         writer.serialize(&city_data)?;
 
         cities.push(city_data);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
+
     Ok(cities)
 }
 
@@ -103,8 +127,10 @@ pub(crate) fn get_ddds() -> Result<Vec<usize>, anyhow::Error> {
 
 pub(crate) async fn generate_neighborhoods(
     client: Client,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) -> Result<Vec<Neighborhood>, anyhow::Error> {
-    println!("Generating neighborhoods...");
+    // println!("Generating neighborhoods...");
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
     let mut writer = csv::Writer::from_path("data/neighborhoods.csv")?;
@@ -112,6 +138,10 @@ pub(crate) async fn generate_neighborhoods(
     let json: Vec<Distrito> = fetch_data(&client, NEIGHBORHOODS_URL).await?;
 
     let mut neighborhoods: Vec<Neighborhood> = Vec::new();
+
+    let pb_helper = ProgressBarHelper::new(m, json.len(), "Neighborhoods:".to_string());
+    let pb = &pb_helper.pb;
+
     for neighborhood in json.iter() {
         let neighborhood_data: Neighborhood = Neighborhood {
             ID_BAIRRO: neighborhood.id,
@@ -135,7 +165,11 @@ pub(crate) async fn generate_neighborhoods(
         writer.serialize(&neighborhood_data)?;
 
         neighborhoods.push(neighborhood_data);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     Ok(neighborhoods)
 }
@@ -143,11 +177,16 @@ pub(crate) async fn generate_neighborhoods(
 pub(crate) fn generate_address(
     neighborhood: &Vec<Neighborhood>,
     total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) -> Result<Vec<Street>, csv::Error> {
-    println!("Generating addresses...");
+    // println!("Generating addresses...");
     let mut writer = csv::Writer::from_path("data/address.csv").unwrap();
 
     let mut addresses: Vec<Street> = Vec::new();
+
+    let pb_helper = ProgressBarHelper::new(m, total, "Addresses:".to_string());
+    let pb = &pb_helper.pb;
 
     for i in 0..total {
         let street_name: String = StreetName().fake();
@@ -170,7 +209,11 @@ pub(crate) fn generate_address(
         writer.serialize(&address_data).unwrap();
 
         addresses.push(address_data);
+        pb.inc(1);
+        main_pb.inc(1);
     }
+
+    pb_helper.finish();
 
     Ok(addresses)
 }

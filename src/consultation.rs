@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use fake::{faker::name::en::Name, Fake};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
+
+use crate::common::ProgressBarHelper;
 // - T_RHSTU_CONSULTA - "ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE","ID_FUNC","DT_HR_CONSULTA","NR_CONSULTORIO","DT_CADASTRO","NM_USUARIO"
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -47,21 +51,16 @@ pub(crate) async fn generate_consultations(
     total: usize,
     total_hospitals: usize,
     total_patients: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) -> Vec<Consultation> {
+    // println!("Generating consultations...");
     let mut writer = csv::Writer::from_path("data/consultation.csv").unwrap();
     let mut consultations: Vec<Consultation> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    let pb = ProgressBar::new(total as u64);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-    pb.set_message("Generating consultations...");
+    let pb_helper = ProgressBarHelper::new(m, total, "Consultations:".to_string());
+    let pb = &pb_helper.pb;
 
     for i in 0..total {
         let consultation = Consultation {
@@ -78,25 +77,25 @@ pub(crate) async fn generate_consultations(
         writer.serialize(&consultation).unwrap();
         consultations.push(consultation);
         pb.inc(1); // Increment the progress bar
+        main_pb.inc(1);
     }
-    pb.finish_with_message("Consultations generated!");
+
+    pb_helper.finish();
     consultations
 }
 
-pub(crate) async fn generate_payment_methods(total: usize) -> Vec<PaymentMethod> {
+pub(crate) async fn generate_payment_methods(
+    total: usize,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
+) -> Vec<PaymentMethod> {
+    // println!("Generating payment methods...");
     let mut writer = csv::Writer::from_path("data/payment_method.csv").unwrap();
     let mut payment_methods: Vec<PaymentMethod> = Vec::new();
 
-    let pb = ProgressBar::new(total as u64);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-    pb.set_message("Generating payment methods...");
+    let pb_helper = ProgressBarHelper::new(m, total, "Payment Methods:".to_string());
+    let pb = &pb_helper.pb;
+
     for i in 0..total {
         let payment_method = PaymentMethod {
             ID_FORMA_PAGTO: i as u32,
@@ -113,8 +112,10 @@ pub(crate) async fn generate_payment_methods(total: usize) -> Vec<PaymentMethod>
         writer.serialize(&payment_method).unwrap();
         payment_methods.push(payment_method);
         pb.inc(1); // Increment the progress bar
+        main_pb.inc(1);
     }
-    pb.finish_with_message("Payment methods generated!");
+
+    pb_helper.finish();
     payment_methods
 }
 
@@ -122,20 +123,16 @@ pub(crate) async fn generate_consultation_payment_methods(
     total: usize,
     payment_methods: Vec<PaymentMethod>,
     consultations: Vec<Consultation>,
+    m: Arc<MultiProgress>,
+    main_pb: Arc<ProgressBar>,
 ) {
+    // println!("Generating consultation payment methods...");
     let mut rng = rand::thread_rng();
 
     let mut writer = csv::Writer::from_path("data/consultation_payment_method.csv").unwrap();
-    let pb = ProgressBar::new(total as u64);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-    pb.set_message("Generating consultation payment methods...");
+    let pb_helper = ProgressBarHelper::new(m, total, "Consultation Payment Methods:".to_string());
+    let pb = &pb_helper.pb;
+
     for i in 0..total {
         let payment_method = payment_methods.choose(&mut rng).unwrap();
 
@@ -155,6 +152,8 @@ pub(crate) async fn generate_consultation_payment_methods(
 
         writer.serialize(&consultation_payment_method).unwrap();
         pb.inc(1); // Increment the progress bar
+        main_pb.inc(1);
     }
-    pb.finish_with_message("Consultation payment methods generated!");
+
+    pb_helper.finish();
 }
