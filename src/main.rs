@@ -61,6 +61,7 @@ use crate::medicine::{generate_medical_prescription, get_medicines};
 use crate::patient::generate_patients;
 use anyhow::Result;
 use common::{create_data_dir, format_number, format_time};
+use constants::{T_RHSTU_LOGRADOURO_ROWS, T_RHSTU_PACIENTE_ROWS, T_RHSTU_ENDERECO_PACIENTE_ROWS, T_RHSTU_CONTATO_PACIENTE_ROWS, T_RHSTU_EMAIL_PACIENTE_ROWS, T_RHSTU_TELEFONE_PACIENTE_ROWS, T_RHSTU_UNID_HOSPITALAR_ROWS, T_RHSTU_ENDERECO_UNIDHOSP_ROWS, T_RHSTU_MEDICO_ROWS, T_RHSTU_FUNCIONARIO_ROWS, T_RHSTU_MOTORISTA_ROWS, T_RHSTU_CONSULTA_ROWS, T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS, T_RHSTU_PLANO_SAUDE_ROWS, T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS, T_RHSTU_PRESCRICAO_MEDICA_ROWS};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::Client;
 use std::sync::{Arc, Mutex}; // Use anyhow for better error handling
@@ -103,76 +104,63 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let address = generate_address(
         &neighborhoods,
-        states + cities.len() + neighborhoods.len(),
+        T_RHSTU_LOGRADOURO_ROWS as usize, 
         m.clone(),
         pb.clone(),
     )?;
 
-    let initial_entries = states + cities.len() + neighborhoods.len() + address.len();
-    let mut remaining_entries = TOTAL_ENTRIES - initial_entries;
-
     // Patient-related tasks
-    let total_patients_contact_types = 3;
-    let total_patients = (((remaining_entries as f32 * 0.30).round() as usize
-        - total_patients_contact_types) as f32
-        / 3.0)
-        .round() as usize;
+    
 
-    let patients_task = tokio::spawn(generate_patients(total_patients, m.clone(), pb.clone()));
+    let patients_task = tokio::spawn(generate_patients(T_RHSTU_PACIENTE_ROWS as usize, m.clone(), pb.clone()));
     let patient_address_task = tokio::spawn(patient::generate_patients_addresses(
-        total_patients,
+        T_RHSTU_ENDERECO_PACIENTE_ROWS as usize,
         address.clone(),
         m.clone(),
         pb.clone(),
     ));
     let contact_types_task = tokio::spawn(patient::generate_contact_types(
-        total_patients_contact_types,
+        6,
         m.clone(),
         pb.clone(),
     ));
     let contact_types = tokio::try_join!(contact_types_task)?;
 
     let patient_contact = tokio::spawn(patient::generate_patient_contacts(
-        total_patients,
+        T_RHSTU_CONTATO_PACIENTE_ROWS as usize,
         contact_types.0,
         m.clone(),
         pb.clone(),
     ));
     let patient_email_task = tokio::spawn(patient::generate_emails(
-        total_patients,
+        T_RHSTU_EMAIL_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     let patient_telefone_task = tokio::spawn(patient::generate_telephones(
-        total_patients,
+        T_RHSTU_TELEFONE_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     // Hospital-related tasks
-    let total_hospitals = 5000;
-    remaining_entries -= total_hospitals;
     let hospitals_task = tokio::spawn(hospital::generate_hospital(
-        total_hospitals,
+        T_RHSTU_UNID_HOSPITALAR_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     let hospital_address_taks = tokio::spawn(hospital::generate_hospital_address(
-        total_hospitals,
+        T_RHSTU_ENDERECO_UNIDHOSP_ROWS as usize,
         neighborhoods,
         cities,
         m.clone(),
         pb.clone(),
     ));
 
-    let total_employees = (total_hospitals * 200) as usize;
-    let total_doctors = (total_employees as f32 * 0.8).round() as usize;
-    let total_drivers = total_employees - total_doctors; // Adjust to ensure total_employees = total_doctors + total_drivers
-
     let employees_task = tokio::spawn(hospital::generate_employee(
-        total_employees,
+        T_RHSTU_FUNCIONARIO_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
@@ -181,29 +169,28 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let doctors_task = tokio::spawn(hospital::generate_doctor(
         employee_ids.clone(),
-        total_doctors,
+        T_RHSTU_MEDICO_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     let drivers_task = tokio::spawn(hospital::generate_driver(
         employee_ids,
-        total_drivers,
+        T_RHSTU_MOTORISTA_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     // Consultation-related tasks
-    let total_consultations = total_patients; // One consultation per patient for simplicity
     let consultations_task = tokio::spawn(consultation::generate_consultations(
-        total_consultations,
-        total_hospitals,
-        total_patients,
+        T_RHSTU_CONSULTA_ROWS as usize,
+        T_RHSTU_UNID_HOSPITALAR_ROWS as usize,
+        T_RHSTU_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
     let payment_methods_task = tokio::spawn(consultation::generate_payment_methods(
-        5,
+        6,
         m.clone(),
         pb.clone(),
     ));
@@ -212,7 +199,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let consultation_payment_methods_task =
         tokio::spawn(consultation::generate_consultation_payment_methods(
-            total_patients,
+            T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS as usize,
             payment_methods,
             consultations,
             m.clone(),
@@ -220,14 +207,13 @@ async fn main() -> Result<(), anyhow::Error> {
         ));
 
     // Health plan-related tasks
-    let total_health_plans = (remaining_entries as f32 * 0.01).round() as usize;
     let health_plans =
-        health_plan::generate_health_plans(total_health_plans, m.clone(), pb.clone());
+        health_plan::generate_health_plans(T_RHSTU_PLANO_SAUDE_ROWS as usize, m.clone(), pb.clone());
 
     let health_plan_patient_task = tokio::spawn(health_plan::generate_patient_health_plans(
-        total_patients,
+        T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS as usize,
         health_plans,
-        total_patients,
+        T_RHSTU_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
@@ -236,7 +222,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let medicines = medicines_task.await?;
 
     let generate_medical_prescription_task = tokio::spawn(generate_medical_prescription(
-        total_patients,
+        T_RHSTU_PRESCRICAO_MEDICA_ROWS as usize,
         medicines,
         m.clone(),
         pb.clone(),
