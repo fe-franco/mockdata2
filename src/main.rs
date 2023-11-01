@@ -62,6 +62,7 @@ use crate::patient::generate_patients;
 use anyhow::Result;
 use common::{create_data_dir, format_number, format_time};
 use constants::{T_RHSTU_LOGRADOURO_ROWS, T_RHSTU_PACIENTE_ROWS, T_RHSTU_ENDERECO_PACIENTE_ROWS, T_RHSTU_CONTATO_PACIENTE_ROWS, T_RHSTU_EMAIL_PACIENTE_ROWS, T_RHSTU_TELEFONE_PACIENTE_ROWS, T_RHSTU_UNID_HOSPITALAR_ROWS, T_RHSTU_ENDERECO_UNIDHOSP_ROWS, T_RHSTU_MEDICO_ROWS, T_RHSTU_FUNCIONARIO_ROWS, T_RHSTU_MOTORISTA_ROWS, T_RHSTU_CONSULTA_ROWS, T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS, T_RHSTU_PLANO_SAUDE_ROWS, T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS, T_RHSTU_PRESCRICAO_MEDICA_ROWS};
+use hospital::generate_employee;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::Client;
 use std::sync::{Arc, Mutex}; // Use anyhow for better error handling
@@ -249,7 +250,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Here, you can adjust one of the categories to make up for the discrepancy. For simplicity, let's adjust the number of patients:
     if discrepancy > 0 {
-        generate_patients(discrepancy as usize, m.clone(), pb.clone()).await;
+        generate_employee(discrepancy as usize, m.clone(), pb.clone()).await;
     }
 
     generated_entries = pb.position() as i32;
