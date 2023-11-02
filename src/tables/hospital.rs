@@ -172,8 +172,6 @@ pub(crate) async fn generate_employee(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<u32> {
-    let mut writer = csv::Writer::from_path("data/employee.csv").unwrap();
-
     let pb_helper = ProgressBarHelper::new(m, total, "Employees:".to_string());
     let pb = &pb_helper.pb;
 
@@ -266,7 +264,6 @@ pub(crate) async fn generate_driver(
         panic!("Not enough employees to generate drivers");
     }
 
-    let mut writer = csv::Writer::from_path("data/driver.csv").unwrap();
     let pb_helper = ProgressBarHelper::new(m, total, "Drivers:".to_string());
     let pb = &pb_helper.pb;
 
@@ -293,7 +290,6 @@ pub(crate) async fn generate_driver(
     }
 
     let generator = SqlGenerator::new(drivers);
-    generator.write_to_file();
 
     // Remove used employee IDs after the loop to avoid shifting elements multiple times
     employee_ids_guard.drain(0..total);

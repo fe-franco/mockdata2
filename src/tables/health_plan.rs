@@ -48,7 +48,6 @@ pub(crate) fn generate_health_plans(
 ) -> Vec<T_RHSTU_PLANO_SAUDE> {
     // println!("Generating health plans...");
     let mut health_plans: Vec<T_RHSTU_PLANO_SAUDE> = Vec::with_capacity(total);
-    let mut writer = csv::Writer::from_path("data/health_plan.csv").unwrap();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Health Plans:".to_string());
     let pb = &pb_helper.pb;
@@ -91,8 +90,6 @@ pub(crate) async fn generate_patient_health_plans(
     // println!("Generating patient health plans...");
     let mut patient_health_plans: Vec<T_RHSTU_PACIENTE_PLANO_SAUDE> = Vec::with_capacity(total);
     let mut rng = rand::thread_rng();
-
-    let mut writer = csv::Writer::from_path("data/patient_health_plan.csv").unwrap();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Patient Health Plans:".to_string());
     let pb = &pb_helper.pb;

@@ -85,7 +85,6 @@ pub(crate) async fn generate_payment_methods(
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_FORMA_PAGAMENTO> {
     // println!("Generating payment methods...");
-    let mut writer = csv::Writer::from_path("data/payment_method.csv").unwrap();
     let mut payment_methods: Vec<T_RHSTU_FORMA_PAGAMENTO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Payment Methods:".to_string());
@@ -126,7 +125,6 @@ pub(crate) async fn generate_consultation_payment_methods(
     // println!("Generating consultation payment methods...");
     let mut rng = rand::thread_rng();
 
-    let mut writer = csv::Writer::from_path("data/consultation_payment_method.csv").unwrap();
     let pb_helper = ProgressBarHelper::new(m, total, "Consultation Payment Methods:".to_string());
     let pb = &pb_helper.pb;
     let mut consultation_payment_methods: Vec<T_RHSTU_CONSULTA_FORMA_PAGTO> = Vec::new();
