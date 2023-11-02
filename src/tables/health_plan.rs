@@ -6,7 +6,6 @@ use fake::{
 };
 use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     common::{random_br_phone, random_cnpj, ProgressBarHelper},
@@ -73,7 +72,7 @@ pub(crate) fn generate_health_plans(
     }
 
     let generator = SqlGenerator::new(health_plans.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -115,7 +114,7 @@ pub(crate) async fn generate_patient_health_plans(
     }
 
     let generator = SqlGenerator::new(patient_health_plans.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 

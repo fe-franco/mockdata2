@@ -121,7 +121,7 @@ pub(crate) async fn generate_patients(
         .collect();
 
     let generator = SqlGenerator::new(patients);
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 }
@@ -157,7 +157,7 @@ pub(crate) async fn generate_contact_types(
         .collect();
 
     let generator = SqlGenerator::new(contact_types.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -196,7 +196,7 @@ pub(crate) async fn generate_patient_contacts(
         .collect();
 
     let generator = SqlGenerator::new(contacts.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -234,7 +234,7 @@ pub(crate) async fn generate_emails(
         .collect();
 
     let generator = SqlGenerator::new(emails.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -277,7 +277,7 @@ pub(crate) async fn generate_telephones(
         .collect();
 
     let generator = SqlGenerator::new(telephones.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -318,7 +318,7 @@ pub(crate) async fn generate_patients_addresses(
         .collect();
 
     let generator = SqlGenerator::new(patient_addresses.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
