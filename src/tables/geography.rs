@@ -113,9 +113,11 @@ pub(crate) async fn generate_cities(
             NM_CIDADE: municipio.nome.clone(),
             CD_IBGE: municipio.id,
             NR_DDD: ibge_code_to_ddd
-                .get(&municipio.id)
+                .get(&municipio.id.to_string())
                 .expect("ddd not found")
-                .clone(),
+                .clone()
+                .parse()
+                .expect("DDD"),
             DT_CADASTRO: created_at.clone(),
             NM_USUARIO: created_by.clone(),
         };
@@ -133,8 +135,8 @@ pub(crate) async fn generate_cities(
     Ok(cities)
 }
 
-fn get_ibge_code_to_ddd() -> Result<HashMap<u32, u32>, anyhow::Error> {
-    let mut ibge_code_to_ddd: HashMap<u32, u32> = HashMap::new();
+fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
+    let mut ibge_code_to_ddd: HashMap<String, String> = HashMap::new();
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b';')
         .from_path("Codigos_Nacionais.csv")?;
@@ -142,7 +144,7 @@ fn get_ibge_code_to_ddd() -> Result<HashMap<u32, u32>, anyhow::Error> {
         let record: HashMap<String, String> = result?;
         let ibge_code = record.get("CO_MUNICIPIO").unwrap();
         let ddd = record.get("CN").unwrap();
-        ibge_code_to_ddd.insert(ibge_code.parse().unwrap(), ddd.parse().unwrap());
+        ibge_code_to_ddd.insert(*ibge_code, *ddd);
     }
     Ok(ibge_code_to_ddd)
 }
