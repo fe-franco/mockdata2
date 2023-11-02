@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tokio::task;
 
-use crate::{bulario::BularioClient, common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
+use crate::{bulario::BularioClient, common::{ProgressBarHelper, current_timestamp}, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
 
 // - T_RHSTU_MEDICAMENTO - "ID_MEDICAMENTO","NM_MEDICAMENTO","DS_DETALHADA_MEDICAMENTO","NR_CODIGO_BARRAS","DT_CADASTRO","NM_USUARIO"
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
@@ -165,7 +165,7 @@ async fn process_category(
                 NM_MEDICAMENTO: medicine.nomeProduto,
                 DS_DETALHADA_MEDICAMENTO: medicine.expediente,
                 NR_CODIGO_BARRAS: medicine.numeroRegistro,
-                DT_CADASTRO: chrono::Local::now().to_string(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: "1".to_string(),
             };
             medicines.push(medicine_data);
@@ -202,7 +202,7 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
             DS_OBSERVACAO_USO: "DS_OBSERVACAO_USO".to_string(),
             QT_MEDICAMENTO: "QT_MEDICAMENTO".to_string(),
             NM_USUARIO: "NM_USUARIO".to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_CADASTRO: current_timestamp(),
         };
 
         prescripitions.push(medical_prescription);

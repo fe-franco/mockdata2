@@ -1,4 +1,4 @@
-use crate::common::{random_br_phone, random_cpf, random_rg, ProgressBarHelper};
+use crate::common::{current_timestamp, random_br_phone, random_cpf, random_rg, ProgressBarHelper};
 use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
 use crate::tables::geography::{get_ddds, TRHSTU_LOGRADOURO};
@@ -98,7 +98,7 @@ pub(crate) async fn generate_patients(
                 NM_PACIENTE: Name().fake(),
                 NR_CPF: random_cpf(),
                 NM_RG: random_rg(),
-                DT_NASCIMENTO: Date().fake(),
+                DT_NASCIMENTO: current_timestamp(),
                 FL_SEXO_BIOLOGICO: ["M", "F"].choose(&mut rng).unwrap().to_string(),
                 DS_ESCOLARIDADE: ["Ensino Fundamental", "Ensino Médio", "Ensino Superior"]
                     .choose(&mut rng)
@@ -112,7 +112,7 @@ pub(crate) async fn generate_patients(
                     .choose(&mut rng)
                     .unwrap()
                     .to_string(),
-                DT_CADASTRO: Date().fake(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: Name().fake(),
                 NR_ALTURA: rng.gen_range(1.0..2.0).to_string(),
                 NR_PESO: rng.gen_range(50.0..100.0).to_string(),
@@ -148,9 +148,9 @@ pub(crate) async fn generate_contact_types(
                     .choose(&mut rng)
                     .unwrap()
                     .to_string(),
-                DT_INICIO: Date().fake(),
-                DT_FIM: Date().fake(),
-                DT_CADASTRO: Date().fake(),
+                DT_INICIO: current_timestamp(),
+                DT_FIM: current_timestamp(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
         })
@@ -189,7 +189,7 @@ pub(crate) async fn generate_patient_contacts(
                 NR_DDI: rng.gen_range(1..100).to_string(),
                 NR_DDD: rng.gen_range(1..100).to_string(),
                 NR_TELEFONE: rng.gen_range(1..100).to_string(),
-                DT_CADASTRO: Date().fake(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
         })
@@ -227,7 +227,7 @@ pub(crate) async fn generate_emails(
                     .unwrap()
                     .to_string(),
                 ST_EMAIL: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
-                DT_CADASTRO: Date().fake(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
         })
@@ -270,7 +270,7 @@ pub(crate) async fn generate_telephones(
                     .unwrap()
                     .to_string(),
                 ST_TELEFONE: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
-                DT_CADASTRO: Date().fake(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
         })
@@ -309,9 +309,9 @@ pub(crate) async fn generate_patients_addresses(
                 NR_LOGRADOURO: rng.gen_range(1..100).to_string(),
                 DS_COMPLEMENTO_NUMERO: "DS_COMPLEMENTO_NUMERO".to_string(),
                 DS_PONTO_REFERENCIA: "DS_PONTO_REFERENCIA".to_string(),
-                DT_INICIO: Date().fake(),
-                DT_FIM: Date().fake(),
-                DT_CADASTRO: Date().fake(),
+                DT_INICIO: current_timestamp(),
+                DT_FIM: current_timestamp(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
         })

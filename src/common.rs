@@ -164,6 +164,14 @@ impl ProgressBarHelper {
     }
 }
 
+pub(crate) fn current_timestamp() -> String {
+    let mut curent_date = current_timestamp(); // 2023-11-02 11:27:08.122216600 -03:00
+    curent_date = curent_date[..19].to_string();
+
+    // TO_DATE('2023-11-02 11:27:08', 'YYYY-MM-DD HH24:MI:SS')
+    format!("TO_DATE('{}', 'YYYY-MM-DD HH24:MI:SS')", curent_date)
+}
+
 pub(crate) fn create_data_dir() {
     // check if data dir exists in current dir
     // if not, create it

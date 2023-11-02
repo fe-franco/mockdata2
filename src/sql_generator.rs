@@ -22,6 +22,14 @@ macro_rules! define_and_impl_sql_insertable {
                 fn to_insert_sql(&self, table_name: &str) -> String {
                     let fields = vec![$(stringify!($field_name)),*];
                     let values = vec![$(format!("{:?}", self.$field_name)),*];
+                    // remove double quotes from values and replace with single quotes if it does not start with TO_DATE
+                    let values = values.iter().map(|v| {
+                        if v.starts_with("\"TO_DATE") {
+                            v.replace("\"", "")
+                        } else {
+                            v.replace("\"", "'")
+                        }
+                    }).collect::<Vec<String>>();
 
                     format!(
                         "INSERT INTO {} ({}) VALUES ({});",

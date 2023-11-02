@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    common::{fetch_data, ProgressBarHelper},
+    common::{current_timestamp, fetch_data, ProgressBarHelper},
     define_and_impl_sql_insertable,
     sql_generator::SqlGenerator,
 };
@@ -54,10 +54,6 @@ const CITIES_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/mu
 const NEIGHBORHOODS_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/distritos";
 const CREATED_BY: &str = "1";
 
-fn current_timestamp() -> String {
-    chrono::Local::now().to_string()
-}
-
 pub(crate) async fn generate_states(
     client: Client,
     m: Arc<MultiProgress>,
@@ -99,7 +95,7 @@ pub(crate) async fn generate_cities(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Result<Vec<TRHSTU_CIDADE>, anyhow::Error> {
-    let created_at = chrono::Local::now().to_string();
+    let created_at = current_timestamp();
     let created_by = "1".to_string();
 
     let ibge_code_to_ddd = get_ibge_code_to_ddd()?;
@@ -170,7 +166,7 @@ pub(crate) async fn generate_neighborhoods(
     main_pb: Arc<ProgressBar>,
 ) -> Result<Vec<TRHSTU_BAIRRO>, anyhow::Error> {
     // println!("Generating neighborhoods...");
-    let created_at = chrono::Local::now().to_string();
+    let created_at = current_timestamp();
     let created_by = "1".to_string();
 
     let json: Vec<Distrito> = fetch_data(&client, NEIGHBORHOODS_URL).await?;

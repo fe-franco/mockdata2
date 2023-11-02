@@ -8,7 +8,7 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 
 use crate::{
-    common::{random_br_phone, random_cnpj, ProgressBarHelper},
+    common::{current_timestamp, random_br_phone, random_cnpj, ProgressBarHelper},
     define_and_impl_sql_insertable,
     sql_generator::SqlGenerator,
 };
@@ -60,9 +60,9 @@ pub(crate) fn generate_health_plans(
             NR_CNPJ: random_cnpj(),
             NM_CONTATO: Name().fake(),
             DS_TELEFONE: random_br_phone(),
-            DT_INICIO: chrono::Local::now().to_string(),
-            DT_FIM: chrono::Local::now().to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_INICIO: current_timestamp(),
+            DT_FIM: current_timestamp(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
 
@@ -102,9 +102,9 @@ pub(crate) async fn generate_patient_health_plans(
                 .unwrap()
                 .ID_PLANO_SAUDE,
             NR_CARTEIRA_PS: rng.gen_range(1..100).to_string(),
-            DT_INICIO: chrono::Local::now().to_string(),
-            DT_FIM: chrono::Local::now().to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_INICIO: current_timestamp(),
+            DT_FIM: current_timestamp(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
 

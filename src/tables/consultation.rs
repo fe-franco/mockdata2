@@ -5,7 +5,9 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 
 use crate::{
-    common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator,
+    common::{current_timestamp, ProgressBarHelper},
+    define_and_impl_sql_insertable,
+    sql_generator::SqlGenerator,
 };
 // - T_RHSTU_CONSULTA - "ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE","ID_FUNC","DT_HR_CONSULTA","NR_CONSULTORIO","DT_CADASTRO","NM_USUARIO"
 
@@ -61,9 +63,9 @@ pub(crate) async fn generate_consultations(
             ID_CONSULTA: i as u32,
             ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
             ID_FUNC: rng.gen_range(1..100) as u32,
-            DT_HR_CONSULTA: chrono::Local::now().to_string(),
+            DT_HR_CONSULTA: current_timestamp(),
             NR_CONSULTORIO: rng.gen_range(1..100).to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
 
@@ -99,7 +101,7 @@ pub(crate) async fn generate_payment_methods(
                 .choose(&mut rand::thread_rng())
                 .unwrap()
                 .to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
 
@@ -140,9 +142,9 @@ pub(crate) async fn generate_consultation_payment_methods(
             ID_CONSULTA: consultation.ID_CONSULTA,
             ID_PACIENTE_PS: consultation.ID_PACIENTE,
             ID_FORMA_PAGTO: payment_method.ID_FORMA_PAGTO,
-            DT_PAGTO_CONSULTA: chrono::Local::now().to_string(),
+            DT_PAGTO_CONSULTA: current_timestamp(),
             ST_PAGTO_CONSULTA: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
-            DT_CADASTRO: chrono::Local::now().to_string(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
 

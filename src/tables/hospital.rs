@@ -1,4 +1,4 @@
-use crate::common::{random_cep, random_cpf, random_rg, ProgressBarHelper};
+use crate::common::{current_timestamp, random_cep, random_cpf, random_rg, ProgressBarHelper};
 use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
 use crate::tables::geography::{TRHSTU_BAIRRO, TRHSTU_CIDADE};
@@ -87,13 +87,13 @@ pub(crate) async fn generate_hospital(
             ID_UNID_HOSPITAL: i as u32,
             NM_UNID_HOSPITALAR: CompanyName().fake(),
             NM_RAZAO_SOCIAL_UNID_HOSP: CompanyName().fake(),
-            DT_FUNDACAO: Date().fake(),
+            DT_FUNDACAO: current_timestamp(),
             NR_LOGRADOURO: StreetName().fake(),
             DS_COMPLEMENTO_NUMERO: BuildingNumber().fake(),
             DS_PONTO_REFERENCIA: BuildingNumber().fake(),
-            DT_INICIO: Date().fake(),
-            DT_TERMINO: Date().fake(),
-            DT_CADASTRO: Date().fake(),
+            DT_INICIO: current_timestamp(),
+            DT_TERMINO: current_timestamp(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
         };
 
@@ -144,7 +144,7 @@ pub(crate) async fn generate_hospital_address(
             ID_ESTADO: trhstu_cidade.ID_ESTADO,
             NR_CEP: random_cep(),
             NR_DDD: trhstu_cidade.NR_DDD.clone(),
-            DT_CADASTRO: Date().fake(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
         };
 
@@ -180,12 +180,12 @@ pub(crate) async fn generate_employee(
                 ID_SUPERIOR: i as u32,
                 NM_FUNC: Name().fake(),
                 DS_CARGO: Name().fake(),
-                DT_NASCIMENTO: Date().fake(),
+                DT_NASCIMENTO: current_timestamp(),
                 VL_SALARIO: rng.gen_range(1000.0..10000.0).to_string(),
                 NR_RG: random_rg(),
                 NR_CPF: random_cpf(),
                 ST_FUNC: ["A", "I"].choose(&mut rng).unwrap().to_string(),
-                DT_CADASTRO: Date().fake(),
+                DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: Name().fake(),
             };
 
@@ -227,7 +227,7 @@ pub(crate) async fn generate_doctor(
             ID_FUNC: employee_ids_guard[i],
             NR_CRM: rng.gen_range(1000000..9999999).to_string(),
             DS_ESPECIALIDADE: Name().fake(),
-            DT_CADASTRO: Date().fake(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
         };
 
@@ -274,8 +274,8 @@ pub(crate) async fn generate_driver(
                 .choose(&mut rng)
                 .unwrap()
                 .to_string(),
-            DT_VALIDADE_CNH: Date().fake(),
-            DT_CADASTRO: Date().fake(),
+            DT_VALIDADE_CNH: current_timestamp(),
+            DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
         };
 
