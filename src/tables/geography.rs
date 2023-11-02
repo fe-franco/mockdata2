@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    common::{current_timestamp, fetch_data, ProgressBarHelper},
+    common::{current_timestamp, fetch_data, random_cep, ProgressBarHelper},
     define_and_impl_sql_insertable,
     sql_generator::SqlGenerator,
 };
@@ -27,7 +27,7 @@ define_and_impl_sql_insertable!(
         pub ID_ESTADO: u32,
         NM_CIDADE: String,
         CD_IBGE: u32,
-        pub NR_DDD: String,
+        pub NR_DDD: u32,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
@@ -43,7 +43,7 @@ define_and_impl_sql_insertable!(
         pub ID_LOGRADOURO: u32,
         pub ID_BAIRRO: u32,
         NM_LOGRADOURO: String,
-        NR_CEP: String,
+        NR_CEP: u32,
         DT_CADASTRO: String,
         NM_USUARIO: String
     }
@@ -103,7 +103,7 @@ pub(crate) async fn generate_cities(
 
     let mut cities = Vec::new();
 
-    let pb_helper = ProgressBarHelper::new(m, json.len() *2, "Cities:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, json.len() * 2, "Cities:".to_string());
     let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
@@ -133,21 +133,21 @@ pub(crate) async fn generate_cities(
     Ok(cities)
 }
 
-fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
+fn get_ibge_code_to_ddd() -> Result<HashMap<String, u32>, anyhow::Error> {
     let mut ibge_code_to_ddd = HashMap::new();
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b';')
         .from_path("Codigos_Nacionais.csv")?;
     for result in reader.deserialize() {
-        let record: HashMap<String, String> = result?;
+        let record: HashMap<String, u32> = result?;
         let ibge_code = record.get("CO_MUNICIPIO").unwrap();
         let ddd = record.get("CN").unwrap();
-        ibge_code_to_ddd.insert(ibge_code.to_string(), ddd.to_string());
+        ibge_code_to_ddd.insert(ibge_code.to_string(), *ddd);
     }
     Ok(ibge_code_to_ddd)
 }
 
-pub(crate) fn get_ddds() -> Result<Vec<usize>, anyhow::Error> {
+pub(crate) fn get_ddds() -> Result<Vec<u32>, anyhow::Error> {
     let mut ddds = Vec::new();
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b';')
@@ -155,7 +155,7 @@ pub(crate) fn get_ddds() -> Result<Vec<usize>, anyhow::Error> {
     for result in reader.deserialize() {
         let record: HashMap<String, String> = result?;
         let ddd = record.get("CN").unwrap();
-        ddds.push(ddd.parse::<usize>()?);
+        ddds.push(ddd.parse::<u32>()?);
     }
     Ok(ddds)
 }
@@ -224,7 +224,6 @@ pub(crate) fn generate_address(
 
     for i in 0..total {
         let street_name: String = StreetName().fake();
-        let zip_code: String = ZipCode().fake();
         let neighborhood_id: usize = neighborhood
             .choose(&mut rand::thread_rng())
             .unwrap()
@@ -235,7 +234,7 @@ pub(crate) fn generate_address(
             ID_LOGRADOURO: i.try_into().expect("cant fit into u32"),
             ID_BAIRRO: neighborhood_id.try_into().expect("cant fit into usize"),
             NM_LOGRADOURO: street_name,
-            NR_CEP: zip_code,
+            NR_CEP: random_cep(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: CREATED_BY.to_string(),
         };

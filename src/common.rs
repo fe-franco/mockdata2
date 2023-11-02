@@ -3,29 +3,33 @@ use rand::{self, Rng};
 use reqwest::Client;
 use std::{env::current_dir, sync::Arc};
 
-pub(crate) fn random_cpf() -> String {
+pub(crate) fn random_cpf() -> u32 {
     // returns a valid CPF
     let mut rng = rand::thread_rng();
-    let cpf: String = format!(
+    let cpf: u32 = format!(
         "{:03}{:03}{:03}{:02}",
         rng.gen_range(0..999),
         rng.gen_range(0..999),
         rng.gen_range(0..999),
         rng.gen_range(0..99)
-    );
+    )
+    .parse()
+    .unwrap();
     cpf
 }
 
-pub(crate) fn random_rg() -> String {
+pub(crate) fn random_rg() -> u32 {
     // returns a valid RG
     let mut rng = rand::thread_rng();
-    let rg: String = format!(
+    let rg: u32 = format!(
         "{:03}{:03}{:03}{:02}",
         rng.gen_range(0..999),
         rng.gen_range(0..999),
         rng.gen_range(0..999),
         rng.gen_range(0..99)
-    );
+    )
+    .parse()
+    .unwrap();
     rg
 }
 
@@ -52,14 +56,16 @@ pub(crate) fn random_br_phone() -> u32 {
     phone_number
 }
 
-pub(crate) fn random_cep() -> String {
+pub(crate) fn random_cep() -> u32 {
     // returns a valid BR CEP
     let mut rng = rand::thread_rng();
-    let cep: String = format!(
+    let cep: u32 = format!(
         "{:05}-{:03}",
         rng.gen_range(0..99999),
         rng.gen_range(0..999)
-    );
+    )
+    .parse()
+    .unwrap();
     cep
 }
 

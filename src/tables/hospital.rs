@@ -34,8 +34,8 @@ define_and_impl_sql_insertable!(
         ID_BAIRRO: u32,
         ID_CIDADE: u32,
         ID_ESTADO: u32,
-        NR_CEP: String,
-        NR_DDD: String,
+        NR_CEP: u32,
+        NR_DDD: u32,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
@@ -46,22 +46,22 @@ define_and_impl_sql_insertable!(
         DS_CARGO: String,
         DT_NASCIMENTO: String,
         VL_SALARIO: String,
-        NR_RG: String,
-        NR_CPF: String,
+        NR_RG: u32,
+        NR_CPF: u32,
         ST_FUNC: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_MEDICO {
         ID_FUNC: u32,
-        NR_CRM: String,
+        NR_CRM: u32,
         DS_ESPECIALIDADE: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_MOTORISTA {
         ID_FUNC: u32,
-        NR_CNH: String,
+        NR_CNH: u32,
         NM_CATEGORIA_CNH: String,
         DT_VALIDADE_CNH: String,
         DT_CADASTRO: String,
@@ -224,7 +224,7 @@ pub(crate) async fn generate_doctor(
     for i in 0..total {
         let doctor = T_RHSTU_MEDICO {
             ID_FUNC: employee_ids_guard[i],
-            NR_CRM: rng.gen_range(1000000..9999999).to_string(),
+            NR_CRM: rng.gen_range(1000000..9999999) as u32,
             DS_ESPECIALIDADE: Name().fake(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
@@ -268,7 +268,7 @@ pub(crate) async fn generate_driver(
     for i in 0..total {
         let driver = T_RHSTU_MOTORISTA {
             ID_FUNC: employee_ids_guard[i],
-            NR_CNH: rng.gen_range(1000000..9999999).to_string(),
+            NR_CNH: rng.gen_range(1000000..9999999) as u32,
             NM_CATEGORIA_CNH: ["A", "B", "C", "D", "E"]
                 .choose(&mut rng)
                 .unwrap()

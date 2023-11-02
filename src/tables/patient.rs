@@ -13,15 +13,15 @@ define_and_impl_sql_insertable!(
     T_RHSTU_PACIENTE {
         pub(crate) ID_PACIENTE: u32,
         pub(crate) NM_PACIENTE: String,
-        pub(crate) NR_CPF: String,
-        pub(crate) NM_RG: String,
+        pub(crate) NR_CPF: u32,
+        pub(crate) NM_RG: u32,
         pub(crate) DT_NASCIMENTO: String,
         pub(crate) FL_SEXO_BIOLOGICO: String,
         pub(crate) DS_ESCOLARIDADE: String,
         pub(crate) DS_ESTADO_CIVIL: String,
         pub(crate) NM_GRUPO_SANGUINEO: String,
-        pub(crate) NR_ALTURA: String,
-        pub(crate) NR_PESO: String,
+        pub(crate) NR_ALTURA: u32,
+        pub(crate) NR_PESO: u32,
         pub(crate) DT_CADASTRO: String,
         pub(crate) NM_USUARIO: String
     },
@@ -38,8 +38,8 @@ define_and_impl_sql_insertable!(
         pub(crate) ID_CONTATO: u32,
         pub(crate) ID_TIPO_CONTATO: u32,
         pub(crate) NM_CONTATO: String,
-        pub(crate) NR_DDI: String,
-        pub(crate) NR_DDD: String,
+        pub(crate) NR_DDI: u32,
+        pub(crate) NR_DDD: u32,
         pub(crate) NR_TELEFONE: String,
         pub(crate) DT_CADASTRO: String,
         pub(crate) NM_USUARIO: String
@@ -56,8 +56,8 @@ define_and_impl_sql_insertable!(
     T_RHSTU_TELEFONE_PACIENTE {
         pub(crate) ID_PACIENTE: u32,
         pub(crate) ID_TELEFONE: u32,
-        pub(crate) NR_DDI: String,
-        pub(crate) NR_DDD: String,
+        pub(crate) NR_DDI: u32,
+        pub(crate) NR_DDD: u32,
         pub(crate) NR_TELEFONE: u32,
         pub(crate) TP_TELEFONE: String,
         pub(crate) ST_TELEFONE: String,
@@ -114,8 +114,8 @@ pub(crate) async fn generate_patients(
                     .to_string(),
                 DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: Name().fake(),
-                NR_ALTURA: rng.gen_range(1.0..2.0).to_string(),
-                NR_PESO: rng.gen_range(50.0..100.0).to_string(),
+                NR_ALTURA: rng.gen_range(1.0..2.0) as u32,
+                NR_PESO: rng.gen_range(50.0..100.0) as u32,
             }
         })
         .collect();
@@ -186,8 +186,8 @@ pub(crate) async fn generate_patient_contacts(
                 ID_CONTATO: i as u32,
                 ID_TIPO_CONTATO: contact_type.ID_TIPO_CONTATO,
                 NM_CONTATO: Name().fake(),
-                NR_DDI: rng.gen_range(1..100).to_string(),
-                NR_DDD: rng.gen_range(1..100).to_string(),
+                NR_DDI: rng.gen_range(1..100) as u32,
+                NR_DDD: rng.gen_range(1..100) as u32,
                 NR_TELEFONE: rng.gen_range(1..100).to_string(),
                 DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
@@ -262,8 +262,8 @@ pub(crate) async fn generate_telephones(
             T_RHSTU_TELEFONE_PACIENTE {
                 ID_PACIENTE: i as u32,
                 ID_TELEFONE: i as u32,
-                NR_DDI: rng.gen_range(1..100).to_string(),
-                NR_DDD: ddds.choose(&mut rng).unwrap().to_string(),
+                NR_DDI: rng.gen_range(1..100) as u32,
+                NR_DDD: *ddds.choose(&mut rng).unwrap(),
                 NR_TELEFONE: random_br_phone(),
                 TP_TELEFONE: ["Pessoal", "Trabalho"]
                     .choose(&mut rng)
