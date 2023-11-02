@@ -178,7 +178,7 @@ pub(crate) async fn generate_neighborhoods(
 
     for neighborhood in json.iter() {
         let neighborhood_data: T_RHSTU_BAIRRO = T_RHSTU_BAIRRO {
-            ID_BAIRRO: neighborhood.id,
+            ID_BAIRRO: pb.position().try_into().expect("cant fit into u32"),
             ID_CIDADE: neighborhood.municipio.id,
             NM_BAIRRO: neighborhood.nome.clone(),
             NM_ZONA_BAIRRO: [
