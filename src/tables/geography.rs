@@ -144,7 +144,7 @@ fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
         let record: HashMap<String, String> = result?;
         let ibge_code = record.get("CO_MUNICIPIO").unwrap();
         let ddd = record.get("CN").unwrap();
-        ibge_code_to_ddd.insert(*ibge_code, *ddd);
+        ibge_code_to_ddd.insert(ibge_code.clone(), ddd.clone());
     }
     Ok(ibge_code_to_ddd)
 }
