@@ -15,14 +15,14 @@ use crate::{
 };
 
 define_and_impl_sql_insertable!(
-    TRHSTU_ESTADO {
+    T_RHSTU_ESTADO {
         pub ID_ESTADO: u32,
         SG_ESTADO: String,
         NM_ESTADO: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
-    TRHSTU_CIDADE {
+    T_RHSTU_CIDADE {
         pub ID_CIDADE: u32,
         pub ID_ESTADO: u32,
         NM_CIDADE: String,
@@ -31,7 +31,7 @@ define_and_impl_sql_insertable!(
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
-    TRHSTU_BAIRRO {
+    T_RHSTU_BAIRRO {
         pub ID_BAIRRO: u32,
         pub ID_CIDADE: u32,
         NM_BAIRRO: String,
@@ -39,7 +39,7 @@ define_and_impl_sql_insertable!(
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
-    TRHSTU_LOGRADOURO {
+    T_RHSTU_LOGRADOURO {
         pub ID_LOGRADOURO: u32,
         pub ID_BAIRRO: u32,
         NM_LOGRADOURO: String,
@@ -66,13 +66,13 @@ pub(crate) async fn generate_states(
     let json: Vec<UF> = fetch_data(&client, STATES_URL).await?;
 
     let mut len: usize = 0;
-    let mut states: Vec<TRHSTU_ESTADO> = Vec::with_capacity(json.len());
+    let mut states: Vec<T_RHSTU_ESTADO> = Vec::with_capacity(json.len());
 
     let pb_helper = ProgressBarHelper::new(m, json.len(), "States:".to_string());
     let pb = &pb_helper.pb;
 
     for state in json.iter() {
-        let state_data = TRHSTU_ESTADO {
+        let state_data = T_RHSTU_ESTADO {
             ID_ESTADO: state.id,
             SG_ESTADO: state.sigla.clone(),
             NM_ESTADO: state.nome.clone(),
@@ -98,7 +98,7 @@ pub(crate) async fn generate_cities(
     client: Client,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<TRHSTU_CIDADE>, anyhow::Error> {
+) -> Result<Vec<T_RHSTU_CIDADE>, anyhow::Error> {
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
 
@@ -111,7 +111,7 @@ pub(crate) async fn generate_cities(
     let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
-        let city_data = TRHSTU_CIDADE {
+        let city_data = T_RHSTU_CIDADE {
             ID_CIDADE: municipio.id,
             ID_ESTADO: municipio.microrregiao.mesorregiao.UF.id,
             NM_CIDADE: municipio.nome.clone(),
@@ -168,20 +168,20 @@ pub(crate) async fn generate_neighborhoods(
     client: Client,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<TRHSTU_BAIRRO>, anyhow::Error> {
+) -> Result<Vec<T_RHSTU_BAIRRO>, anyhow::Error> {
     // println!("Generating neighborhoods...");
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
 
     let json: Vec<Distrito> = fetch_data(&client, NEIGHBORHOODS_URL).await?;
 
-    let mut neighborhoods: Vec<TRHSTU_BAIRRO> = Vec::new();
+    let mut neighborhoods: Vec<T_RHSTU_BAIRRO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, json.len(), "Neighborhoods:".to_string());
     let pb = &pb_helper.pb;
 
     for neighborhood in json.iter() {
-        let neighborhood_data: TRHSTU_BAIRRO = TRHSTU_BAIRRO {
+        let neighborhood_data: T_RHSTU_BAIRRO = T_RHSTU_BAIRRO {
             ID_BAIRRO: neighborhood.id,
             ID_CIDADE: neighborhood.municipio.id,
             NM_BAIRRO: neighborhood.nome.clone(),
@@ -214,14 +214,14 @@ pub(crate) async fn generate_neighborhoods(
 }
 
 pub(crate) fn generate_address(
-    neighborhood: &Vec<TRHSTU_BAIRRO>,
+    neighborhood: &Vec<T_RHSTU_BAIRRO>,
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<TRHSTU_LOGRADOURO>, csv::Error> {
+) -> Result<Vec<T_RHSTU_LOGRADOURO>, csv::Error> {
     // println!("Generating addresses...");
 
-    let mut addresses: Vec<TRHSTU_LOGRADOURO> = Vec::new();
+    let mut addresses: Vec<T_RHSTU_LOGRADOURO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Addresses:".to_string());
     let pb = &pb_helper.pb;
@@ -235,7 +235,7 @@ pub(crate) fn generate_address(
             .clone()
             .ID_BAIRRO as usize;
 
-        let address_data: TRHSTU_LOGRADOURO = TRHSTU_LOGRADOURO {
+        let address_data: T_RHSTU_LOGRADOURO = T_RHSTU_LOGRADOURO {
             ID_LOGRADOURO: i.try_into().expect("cant fit into u32"),
             ID_BAIRRO: neighborhood_id.try_into().expect("cant fit into usize"),
             NM_LOGRADOURO: street_name,

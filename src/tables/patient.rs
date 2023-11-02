@@ -1,7 +1,7 @@
 use crate::common::{random_br_phone, random_cpf, random_rg, ProgressBarHelper};
 use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
-use crate::tables::geography::{get_ddds, TRHSTU_LOGRADOURO};
+use crate::tables::geography::{get_ddds, T_RHSTU_LOGRADOURO};
 use fake::faker::internet::en::FreeEmail;
 use fake::{faker::chrono::en::Date, faker::name::en::Name, Fake};
 use indicatif::{MultiProgress, ProgressBar};
@@ -286,7 +286,7 @@ pub(crate) async fn generate_telephones(
 
 pub(crate) async fn generate_patients_addresses(
     patients: usize,
-    address: Vec<TRHSTU_LOGRADOURO>,
+    address: Vec<T_RHSTU_LOGRADOURO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_ENDERECO_PACIENTE> {
