@@ -47,25 +47,27 @@
 mod bulario;
 mod common;
 mod constants;
-mod consultation;
-mod geography;
-mod health_plan;
-mod hospital;
-mod medicine;
-mod patient;
+mod sql_generator;
+mod tables;
 
-use crate::geography::{
+use crate::tables::geography::{
     generate_address, generate_cities, generate_neighborhoods, generate_states,
 };
-use crate::medicine::{generate_medical_prescription, get_medicines};
-use crate::patient::generate_patients;
+use crate::tables::medicine::{generate_medical_prescription, get_medicines};
+use crate::tables::patient::generate_patients;
 use anyhow::Result;
 use common::{create_data_dir, format_number, format_time};
-use constants::{T_RHSTU_LOGRADOURO_ROWS, T_RHSTU_PACIENTE_ROWS, T_RHSTU_ENDERECO_PACIENTE_ROWS, T_RHSTU_CONTATO_PACIENTE_ROWS, T_RHSTU_EMAIL_PACIENTE_ROWS, T_RHSTU_TELEFONE_PACIENTE_ROWS, T_RHSTU_UNID_HOSPITALAR_ROWS, T_RHSTU_ENDERECO_UNIDHOSP_ROWS, T_RHSTU_MEDICO_ROWS, T_RHSTU_FUNCIONARIO_ROWS, T_RHSTU_MOTORISTA_ROWS, T_RHSTU_CONSULTA_ROWS, T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS, T_RHSTU_PLANO_SAUDE_ROWS, T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS, T_RHSTU_PRESCRICAO_MEDICA_ROWS};
-use hospital::generate_employee;
+use constants::{
+    T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS, T_RHSTU_CONSULTA_ROWS, T_RHSTU_CONTATO_PACIENTE_ROWS,
+    T_RHSTU_EMAIL_PACIENTE_ROWS, T_RHSTU_ENDERECO_PACIENTE_ROWS, T_RHSTU_ENDERECO_UNIDHOSP_ROWS,
+    T_RHSTU_FUNCIONARIO_ROWS, T_RHSTU_LOGRADOURO_ROWS, T_RHSTU_MEDICO_ROWS, T_RHSTU_MOTORISTA_ROWS,
+    T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS, T_RHSTU_PACIENTE_ROWS, T_RHSTU_PLANO_SAUDE_ROWS,
+    T_RHSTU_PRESCRICAO_MEDICA_ROWS, T_RHSTU_TELEFONE_PACIENTE_ROWS, T_RHSTU_UNID_HOSPITALAR_ROWS,
+};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::Client;
-use std::sync::{Arc, Mutex}; // Use anyhow for better error handling
+use std::sync::{Arc, Mutex};
+use tables::hospital::generate_employee; // Use anyhow for better error handling
 
 const TOTAL_ENTRIES: usize = 10_000_000;
 
@@ -99,60 +101,62 @@ async fn main() -> Result<(), anyhow::Error> {
     let (states, cities, neighborhoods) =
         tokio::try_join!(states_task, cities_task, neighborhoods_task)?;
 
-    let states = states?;
     let cities = cities?;
     let neighborhoods = neighborhoods?;
 
     let address = generate_address(
         &neighborhoods,
-        T_RHSTU_LOGRADOURO_ROWS as usize, 
+        T_RHSTU_LOGRADOURO_ROWS as usize,
         m.clone(),
         pb.clone(),
     )?;
 
     // Patient-related tasks
-    
 
-    let patients_task = tokio::spawn(generate_patients(T_RHSTU_PACIENTE_ROWS as usize, m.clone(), pb.clone()));
-    let patient_address_task = tokio::spawn(patient::generate_patients_addresses(
+    let patients_task = tokio::spawn(generate_patients(
+        T_RHSTU_PACIENTE_ROWS as usize,
+        m.clone(),
+        pb.clone(),
+    ));
+    let patient_address_task = tokio::spawn(tables::patient::generate_patients_addresses(
         T_RHSTU_ENDERECO_PACIENTE_ROWS as usize,
         address.clone(),
         m.clone(),
         pb.clone(),
     ));
-    let contact_types_task = tokio::spawn(patient::generate_contact_types(
+    let contact_types_task = tokio::spawn(tables::patient::generate_contact_types(
         6,
         m.clone(),
         pb.clone(),
     ));
     let contact_types = tokio::try_join!(contact_types_task)?;
 
-    let patient_contact = tokio::spawn(patient::generate_patient_contacts(
+    let patient_contact = tokio::spawn(tables::patient::generate_patient_contacts(
         T_RHSTU_CONTATO_PACIENTE_ROWS as usize,
         contact_types.0,
         m.clone(),
         pb.clone(),
     ));
-    let patient_email_task = tokio::spawn(patient::generate_emails(
+    let patient_email_task = tokio::spawn(tables::patient::generate_emails(
         T_RHSTU_EMAIL_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
-    let patient_telefone_task = tokio::spawn(patient::generate_telephones(
+    let patient_telefone_task = tokio::spawn(tables::patient::generate_telephones(
         T_RHSTU_TELEFONE_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
     // Hospital-related tasks
-    let hospitals_task = tokio::spawn(hospital::generate_hospital(
+    let hospitals_task = tokio::spawn(tables::hospital::generate_hospital(
         T_RHSTU_UNID_HOSPITALAR_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
-    let hospital_address_taks = tokio::spawn(hospital::generate_hospital_address(
+    let hospital_address_taks = tokio::spawn(tables::hospital::generate_hospital_address(
         T_RHSTU_ENDERECO_UNIDHOSP_ROWS as usize,
         neighborhoods,
         cities,
@@ -160,7 +164,7 @@ async fn main() -> Result<(), anyhow::Error> {
         pb.clone(),
     ));
 
-    let employees_task = tokio::spawn(hospital::generate_employee(
+    let employees_task = tokio::spawn(tables::hospital::generate_employee(
         T_RHSTU_FUNCIONARIO_ROWS as usize,
         m.clone(),
         pb.clone(),
@@ -168,14 +172,14 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let employee_ids: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new(employees_task.await?));
 
-    let doctors_task = tokio::spawn(hospital::generate_doctor(
+    let doctors_task = tokio::spawn(tables::hospital::generate_doctor(
         employee_ids.clone(),
         T_RHSTU_MEDICO_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
 
-    let drivers_task = tokio::spawn(hospital::generate_driver(
+    let drivers_task = tokio::spawn(tables::hospital::generate_driver(
         employee_ids,
         T_RHSTU_MOTORISTA_ROWS as usize,
         m.clone(),
@@ -183,14 +187,14 @@ async fn main() -> Result<(), anyhow::Error> {
     ));
 
     // Consultation-related tasks
-    let consultations_task = tokio::spawn(consultation::generate_consultations(
+    let consultations_task = tokio::spawn(tables::consultation::generate_consultations(
         T_RHSTU_CONSULTA_ROWS as usize,
         T_RHSTU_UNID_HOSPITALAR_ROWS as usize,
         T_RHSTU_PACIENTE_ROWS as usize,
         m.clone(),
         pb.clone(),
     ));
-    let payment_methods_task = tokio::spawn(consultation::generate_payment_methods(
+    let payment_methods_task = tokio::spawn(tables::consultation::generate_payment_methods(
         6,
         m.clone(),
         pb.clone(),
@@ -199,7 +203,7 @@ async fn main() -> Result<(), anyhow::Error> {
         tokio::try_join!(consultations_task, payment_methods_task)?;
 
     let consultation_payment_methods_task =
-        tokio::spawn(consultation::generate_consultation_payment_methods(
+        tokio::spawn(tables::consultation::generate_consultation_payment_methods(
             T_RHSTU_CONSULTA_FORMA_PAGTO_ROWS as usize,
             payment_methods,
             consultations,
@@ -208,16 +212,20 @@ async fn main() -> Result<(), anyhow::Error> {
         ));
 
     // Health plan-related tasks
-    let health_plans =
-        health_plan::generate_health_plans(T_RHSTU_PLANO_SAUDE_ROWS as usize, m.clone(), pb.clone());
-
-    let health_plan_patient_task = tokio::spawn(health_plan::generate_patient_health_plans(
-        T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS as usize,
-        health_plans,
-        T_RHSTU_PACIENTE_ROWS as usize,
+    let health_plans = tables::health_plan::generate_health_plans(
+        T_RHSTU_PLANO_SAUDE_ROWS as usize,
         m.clone(),
         pb.clone(),
-    ));
+    );
+
+    let health_plan_patient_task =
+        tokio::spawn(tables::health_plan::generate_patient_health_plans(
+            T_RHSTU_PACIENTE_PLANO_SAUDE_ROWS as usize,
+            health_plans,
+            T_RHSTU_PACIENTE_ROWS as usize,
+            m.clone(),
+            pb.clone(),
+        ));
 
     // Medicine-related tasks
     let medicines = medicines_task.await?;

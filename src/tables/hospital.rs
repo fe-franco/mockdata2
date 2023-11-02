@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use crate::common::{random_cep, random_cpf, random_rg, ProgressBarHelper};
+use crate::tables::geography::{TRHSTU_BAIRRO, TRHSTU_CIDADE};
 use fake::{
     faker::{
         address::en::{BuildingNumber, StreetName},
@@ -13,11 +15,6 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    common::{random_cep, random_cpf, random_rg, ProgressBarHelper},
-    geography::{City, Neighborhood},
-};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -128,8 +125,8 @@ pub(crate) async fn generate_hospital(
 
 pub(crate) async fn generate_hospital_address(
     total: usize,
-    neighborhoods: Vec<Neighborhood>,
-    cities: Vec<City>,
+    trhstu_bairros: Vec<TRHSTU_BAIRRO>,
+    cities: Vec<TRHSTU_CIDADE>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> usize {
@@ -142,21 +139,21 @@ pub(crate) async fn generate_hospital_address(
     let pb = &pb_helper.pb;
 
     for i in 0..total {
-        let neighborhood = neighborhoods.choose(&mut rng).unwrap().clone();
+        let trhstu_bairro = trhstu_bairros.choose(&mut rng).unwrap().clone();
 
-        // find city and state ids from neighborhood
-        let city = cities
+        // find TRHSTU_CIDADE and state ids from TRHSTU_BAIRRO
+        let trhstu_cidade = cities
             .iter()
-            .find(|&c| c.ID_CIDADE == neighborhood.ID_CIDADE)
+            .find(|&c| c.ID_CIDADE == trhstu_bairro.ID_CIDADE)
             .unwrap();
 
         let hospital_address = HospitalAddress {
             ID_UNID_HOSPITAL: i as u32,
-            ID_BAIRRO: neighborhood.ID_BAIRRO,
-            ID_CIDADE: city.ID_CIDADE,
-            ID_ESTADO: city.ID_ESTADO,
+            ID_BAIRRO: trhstu_bairro.ID_BAIRRO,
+            ID_CIDADE: trhstu_cidade.ID_CIDADE,
+            ID_ESTADO: trhstu_cidade.ID_ESTADO,
             NR_CEP: random_cep(),
-            NR_DDD: city.NR_DDD.clone(),
+            NR_DDD: trhstu_cidade.NR_DDD.clone(),
             DT_CADASTRO: Date().fake(),
             NM_USUARIO: Name().fake(),
         };
@@ -210,7 +207,7 @@ pub(crate) async fn generate_employee(
         pb.inc(1);
         main_pb.inc(1);
     }
-    
+
     pb_helper.finish();
 
     employees.into_par_iter().map(|e| e.ID_FUNC).collect()

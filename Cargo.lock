@@ -723,6 +723,7 @@ dependencies = [
  "rayon",
  "reqwest",
  "serde",
+ "serde_derive",
  "serde_json",
  "tokio",
 ]

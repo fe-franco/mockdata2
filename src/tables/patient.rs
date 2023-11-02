@@ -1,5 +1,5 @@
 use crate::common::{random_br_phone, random_cpf, random_rg, ProgressBarHelper};
-use crate::geography::{get_ddds, Street};
+use crate::tables::geography::{get_ddds, TRHSTU_LOGRADOURO};
 
 use fake::faker::internet::en::FreeEmail;
 use fake::{faker::chrono::en::Date, faker::name::en::Name, Fake};
@@ -310,7 +310,7 @@ pub(crate) async fn generate_telephones(
 
 pub(crate) async fn generate_patients_addresses(
     patients: usize,
-    address: Vec<Street>,
+    address: Vec<TRHSTU_LOGRADOURO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<PatientAddress> {

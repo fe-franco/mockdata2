@@ -9,7 +9,46 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, sync::Arc};
 
-use crate::common::{fetch_data, ProgressBarHelper};
+use crate::{
+    common::{fetch_data, ProgressBarHelper},
+    define_and_impl_sql_insertable,
+    sql_generator::SqlGenerator,
+};
+
+define_and_impl_sql_insertable!(
+    TRHSTU_ESTADO {
+        pub ID_ESTADO: u32,
+        SG_ESTADO: String,
+        NM_ESTADO: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    TRHSTU_CIDADE {
+        pub ID_CIDADE: u32,
+        pub ID_ESTADO: u32,
+        NM_CIDADE: String,
+        CD_IBGE: u32,
+        pub NR_DDD: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    TRHSTU_BAIRRO {
+        pub ID_BAIRRO: u32,
+        pub ID_CIDADE: u32,
+        NM_BAIRRO: String,
+        NM_ZONA_BAIRRO: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    TRHSTU_LOGRADOURO {
+        pub ID_LOGRADOURO: u32,
+        pub ID_BAIRRO: u32,
+        NM_LOGRADOURO: String,
+        NR_CEP: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    }
+);
 
 const STATES_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/estados";
 const CITIES_URL: &str = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios";
@@ -31,38 +70,42 @@ pub(crate) async fn generate_states(
 ) -> Result<usize, anyhow::Error> {
     let json: Vec<UF> = fetch_data(&client, STATES_URL).await?;
 
-    let mut writer = create_csv_writer("data/states.csv")?;
     let mut len: usize = 0;
+    let mut states: Vec<TRHSTU_ESTADO> = Vec::with_capacity(json.len());
 
     let pb_helper = ProgressBarHelper::new(m, json.len(), "States:".to_string());
     let pb = &pb_helper.pb;
 
     for state in json.iter() {
-        let state_data = State {
+        let state_data = TRHSTU_ESTADO {
             ID_ESTADO: state.id,
             SG_ESTADO: state.sigla.clone(),
             NM_ESTADO: state.nome.clone(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: CREATED_BY.to_string(),
         };
-        writer.serialize(&state_data)?;
+        states.push(state_data);
         len += 1;
         pb.inc(1);
         main_pb.inc(1);
     }
 
+    // Use SqlGenerator to generate SQL and write to a file
+    let generator = SqlGenerator::new(states);
+    generator.write_to_file()?;
+
     pb_helper.finish();
 
     Ok(len)
 }
+
 pub(crate) async fn generate_cities(
     client: Client,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<City>, anyhow::Error> {
+) -> Result<Vec<TRHSTU_CIDADE>, anyhow::Error> {
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
-    let mut writer = csv::Writer::from_path("data/cities.csv")?;
 
     let ibge_code_to_ddd = get_ibge_code_to_ddd()?;
     let json: Vec<Municipio> = fetch_data(&client, CITIES_URL).await?;
@@ -73,11 +116,11 @@ pub(crate) async fn generate_cities(
     let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
-        let city_data = City {
+        let city_data = TRHSTU_CIDADE {
             ID_CIDADE: municipio.id,
             ID_ESTADO: municipio.microrregiao.mesorregiao.UF.id,
             NM_CIDADE: municipio.nome.clone(),
-            CD_IBGE: municipio.id.to_string(),
+            CD_IBGE: municipio.id,
             NR_DDD: ibge_code_to_ddd
                 .get(&municipio.id.to_string())
                 .expect("ddd not found")
@@ -86,12 +129,13 @@ pub(crate) async fn generate_cities(
             NM_USUARIO: created_by.clone(),
         };
 
-        writer.serialize(&city_data)?;
-
         cities.push(city_data);
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(cities.clone());
+    generator.write_to_file()?;
 
     pb_helper.finish();
 
@@ -129,21 +173,20 @@ pub(crate) async fn generate_neighborhoods(
     client: Client,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<Neighborhood>, anyhow::Error> {
+) -> Result<Vec<TRHSTU_BAIRRO>, anyhow::Error> {
     // println!("Generating neighborhoods...");
     let created_at = chrono::Local::now().to_string();
     let created_by = "1".to_string();
-    let mut writer = csv::Writer::from_path("data/neighborhoods.csv")?;
 
     let json: Vec<Distrito> = fetch_data(&client, NEIGHBORHOODS_URL).await?;
 
-    let mut neighborhoods: Vec<Neighborhood> = Vec::new();
+    let mut neighborhoods: Vec<TRHSTU_BAIRRO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, json.len(), "Neighborhoods:".to_string());
     let pb = &pb_helper.pb;
 
     for neighborhood in json.iter() {
-        let neighborhood_data: Neighborhood = Neighborhood {
+        let neighborhood_data: TRHSTU_BAIRRO = TRHSTU_BAIRRO {
             ID_BAIRRO: neighborhood.id,
             ID_CIDADE: neighborhood.municipio.id,
             NM_BAIRRO: neighborhood.nome.clone(),
@@ -162,12 +205,13 @@ pub(crate) async fn generate_neighborhoods(
             NM_USUARIO: created_by.clone(),
         };
 
-        writer.serialize(&neighborhood_data)?;
-
         neighborhoods.push(neighborhood_data);
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(neighborhoods.clone());
+    generator.write_to_file()?;
 
     pb_helper.finish();
 
@@ -175,15 +219,14 @@ pub(crate) async fn generate_neighborhoods(
 }
 
 pub(crate) fn generate_address(
-    neighborhood: &Vec<Neighborhood>,
+    neighborhood: &Vec<TRHSTU_BAIRRO>,
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Result<Vec<Street>, csv::Error> {
+) -> Result<Vec<TRHSTU_LOGRADOURO>, csv::Error> {
     // println!("Generating addresses...");
-    let mut writer = csv::Writer::from_path("data/address.csv").unwrap();
 
-    let mut addresses: Vec<Street> = Vec::new();
+    let mut addresses: Vec<TRHSTU_LOGRADOURO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Addresses:".to_string());
     let pb = &pb_helper.pb;
@@ -197,7 +240,7 @@ pub(crate) fn generate_address(
             .clone()
             .ID_BAIRRO as usize;
 
-        let address_data: Street = Street {
+        let address_data: TRHSTU_LOGRADOURO = TRHSTU_LOGRADOURO {
             ID_LOGRADOURO: i.try_into().expect("cant fit into u32"),
             ID_BAIRRO: neighborhood_id.try_into().expect("cant fit into usize"),
             NM_LOGRADOURO: street_name,
@@ -206,12 +249,13 @@ pub(crate) fn generate_address(
             NM_USUARIO: CREATED_BY.to_string(),
         };
 
-        writer.serialize(&address_data).unwrap();
-
         addresses.push(address_data);
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(addresses.clone());
+    generator.write_to_file()?;
 
     pb_helper.finish();
 
@@ -260,48 +304,4 @@ struct Distrito {
     id: u32,
     nome: String,
     municipio: Municipio,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-struct State {
-    ID_ESTADO: u32,
-    SG_ESTADO: String,
-    NM_ESTADO: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct City {
-    pub(crate) ID_CIDADE: u32,
-    pub(crate) ID_ESTADO: u32,
-    NM_CIDADE: String,
-    CD_IBGE: String,
-    pub(crate) NR_DDD: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Neighborhood {
-    pub(crate) ID_BAIRRO: u32,
-    pub(crate) ID_CIDADE: u32,
-    NM_BAIRRO: String,
-    NM_ZONA_BAIRRO: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Street {
-    pub(crate) ID_LOGRADOURO: u32,
-    ID_BAIRRO: u32,
-    NM_LOGRADOURO: String,
-    NR_CEP: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String,
 }
