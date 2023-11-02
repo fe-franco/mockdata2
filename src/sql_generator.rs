@@ -27,7 +27,7 @@ macro_rules! define_and_impl_sql_insertable {
                         if v.starts_with("\"TO_DATE") {
                             v.replace("\"", "")
                         } else {
-                            v.replace("\"", "'")
+                            v.replace("'", "").replace("\"", "'")
                         }
                     }).collect::<Vec<String>>();
 
