@@ -127,7 +127,7 @@ pub(crate) fn format_number(mut number: i64) -> String {
         suffix = "K";
     }
 
-    format!("{}{:.2}{}", suffix, number as f64, suffix)
+    format!("{:.2}{}", number as f64, suffix)
 }
 
 pub(crate) struct ProgressBarHelper {
