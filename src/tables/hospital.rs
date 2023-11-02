@@ -53,14 +53,14 @@ define_and_impl_sql_insertable!(
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
-    T_RHSTU_MEDICO_ROWS {
+    T_RHSTU_MEDICO {
         ID_FUNC: u32,
         NR_CRM: String,
         DS_ESPECIALIDADE: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
-    T_RHSTU_MOTORISTA_ROWS {
+    T_RHSTU_MOTORISTA {
         ID_FUNC: u32,
         NR_CNH: String,
         NM_CATEGORIA_CNH: String,
@@ -105,7 +105,7 @@ pub(crate) async fn generate_hospital(
     }
 
     let generator = SqlGenerator::new(hospitals);
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -123,11 +123,7 @@ pub(crate) async fn generate_hospital_address(
 
     let mut rng = rand::thread_rng();
 
-    let pb_helper = ProgressBarHelper::new(
-        m,
-        total,
-        "T_RHSTU_UNID_HOSPITALAR_ROWS Addresses:".to_string(),
-    );
+    let pb_helper = ProgressBarHelper::new(m, total, "T_RHSTU_ENDERECO_UNIDHOSP:".to_string());
     let pb = &pb_helper.pb;
 
     let mut hospitals_addresses: Vec<T_RHSTU_ENDERECO_UNIDHOSP> = Vec::new();
@@ -160,7 +156,7 @@ pub(crate) async fn generate_hospital_address(
     }
 
     let generator = SqlGenerator::new(hospitals_addresses);
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -201,7 +197,7 @@ pub(crate) async fn generate_employee(
         .collect();
 
     let generator = SqlGenerator::new(employees.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -227,7 +223,7 @@ pub(crate) async fn generate_doctor(
     let mut doctors = Vec::new(); // For example, a batch size of 1000
 
     for i in 0..total {
-        let doctor = T_RHSTU_MEDICO_ROWS {
+        let doctor = T_RHSTU_MEDICO {
             ID_FUNC: employee_ids_guard[i],
             NR_CRM: rng.gen_range(1000000..9999999).to_string(),
             DS_ESPECIALIDADE: Name().fake(),
@@ -242,7 +238,7 @@ pub(crate) async fn generate_doctor(
     }
 
     let generator = SqlGenerator::new(doctors);
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     // Remove used employee IDs after the loop to avoid shifting elements multiple times
     employee_ids_guard.drain(0..total);
@@ -271,7 +267,7 @@ pub(crate) async fn generate_driver(
     let mut drivers = Vec::with_capacity(1000); // For example, a batch size of 1000
 
     for i in 0..total {
-        let driver = T_RHSTU_MOTORISTA_ROWS {
+        let driver = T_RHSTU_MOTORISTA {
             ID_FUNC: employee_ids_guard[i],
             NR_CNH: rng.gen_range(1000000..9999999).to_string(),
             NM_CATEGORIA_CNH: ["A", "B", "C", "D", "E"]
@@ -290,6 +286,7 @@ pub(crate) async fn generate_driver(
     }
 
     let generator = SqlGenerator::new(drivers);
+    let _ = generator.write_to_file();
 
     // Remove used employee IDs after the loop to avoid shifting elements multiple times
     employee_ids_guard.drain(0..total);

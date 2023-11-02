@@ -96,7 +96,7 @@ pub(crate) async fn get_medicines(
     }
 
     let generator = SqlGenerator::new(medicines.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 
@@ -212,7 +212,7 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
     }
 
     let generator = SqlGenerator::new(prescripitions.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     
     pb_helper.finish();

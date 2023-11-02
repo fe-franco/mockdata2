@@ -237,7 +237,7 @@ async fn main() -> Result<(), anyhow::Error> {
     ));
 
     // await all tasks
-    tokio::try_join!(
+    let _ = tokio::try_join!(
         states_task,
         patients_task,
         patient_address_task,

@@ -73,7 +73,7 @@ pub(crate) async fn generate_consultations(
     }
 
     let generator = SqlGenerator::new(consultations.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
     consultations
@@ -109,7 +109,7 @@ pub(crate) async fn generate_payment_methods(
     }
 
     let generator = SqlGenerator::new(payment_methods.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
     payment_methods
@@ -152,7 +152,7 @@ pub(crate) async fn generate_consultation_payment_methods(
     }
 
     let generator = SqlGenerator::new(consultation_payment_methods.clone());
-    generator.write_to_file();
+    let _ = generator.write_to_file();
 
     pb_helper.finish();
 }
