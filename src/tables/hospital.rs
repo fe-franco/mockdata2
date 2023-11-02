@@ -21,7 +21,7 @@ define_and_impl_sql_insertable!(
         NM_UNID_HOSPITALAR: String,
         NM_RAZAO_SOCIAL_UNID_HOSP: String,
         DT_FUNDACAO: String,
-        NR_LOGRADOURO: String,
+        NR_LOGRADOURO: u64,
         DS_COMPLEMENTO_NUMERO: String,
         DS_PONTO_REFERENCIA: String,
         DT_INICIO: String,
@@ -80,6 +80,7 @@ pub(crate) async fn generate_hospital(
     let pb = &pb_helper.pb;
 
     let mut hospitals: Vec<T_RHSTU_UNID_HOSPITALAR> = Vec::new();
+    let mut rng = rand::thread_rng();
 
     for i in 0..total {
         let hospital = T_RHSTU_UNID_HOSPITALAR {
@@ -87,7 +88,7 @@ pub(crate) async fn generate_hospital(
             NM_UNID_HOSPITALAR: CompanyName().fake(),
             NM_RAZAO_SOCIAL_UNID_HOSP: CompanyName().fake(),
             DT_FUNDACAO: current_timestamp(),
-            NR_LOGRADOURO: StreetName().fake(),
+            NR_LOGRADOURO: rng.gen_range(100..1000) as u64,
             DS_COMPLEMENTO_NUMERO: BuildingNumber().fake(),
             DS_PONTO_REFERENCIA: BuildingNumber().fake(),
             DT_INICIO: current_timestamp(),

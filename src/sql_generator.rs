@@ -77,7 +77,7 @@ impl<T> SqlGenerator<T> {
         let file = File::create(&filename)?;
         let mut writer = BufWriter::new(file);
 
-        for chunk in self.data.chunks(1000) {
+        for chunk in self.data.chunks(500) {
             writer.write_all(b"INSERT ALL\n")?;
             for item in chunk {
                 let sql = item.to_insert_sql(table_name);
@@ -87,9 +87,9 @@ impl<T> SqlGenerator<T> {
             }
             writer.write_all(format!("SELECT * FROM dual;\n").as_bytes())?;
             writer.write_all(format!("commit;\n").as_bytes())?;
+            writer.write_all(format!("select count(*) from {};\n", table_name).as_bytes())?;
         }
 
-        writer.write_all(format!("select count(*) from {};\n", table_name).as_bytes())?;
 
         Ok(())
     }
