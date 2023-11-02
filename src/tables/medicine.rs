@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tokio::task;
 
-use crate::{bulario::BularioClient, common::{ProgressBarHelper, current_timestamp}, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
+use crate::{bulario::BularioClient, common::{ProgressBarHelper, current_timestamp, StringUtils}, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
 
 // - T_RHSTU_MEDICAMENTO - "ID_MEDICAMENTO","NM_MEDICAMENTO","DS_DETALHADA_MEDICAMENTO","NR_CODIGO_BARRAS","DT_CADASTRO","NM_USUARIO"
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
@@ -162,7 +162,7 @@ async fn process_category(
         for medicine in result.content {
             let medicine_data = T_RHSTU_MEDICAMENTO {
                 ID_MEDICAMENTO: medicine.idProduto,
-                NM_MEDICAMENTO: medicine.nomeProduto[..50].to_string(),
+                NM_MEDICAMENTO: medicine.nomeProduto.substring(0, 50).to_string(),
                 DS_DETALHADA_MEDICAMENTO: medicine.expediente,
                 NR_CODIGO_BARRAS: medicine.numeroRegistro,
                 DT_CADASTRO: current_timestamp(),
