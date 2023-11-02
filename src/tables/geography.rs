@@ -107,17 +107,24 @@ pub(crate) async fn generate_cities(
     let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
+        let ddd = ibge_code_to_ddd
+            .get(&municipio.id.to_string())
+            .expect("ddd not found")
+            .clone();
+        let ddd_num: u32 = match ddd.parse() {
+            Ok(num) => num,
+            Err(_) => {
+                pb.set_message("Error parsing ddd");
+                11
+            }
+        };
+
         let city_data = T_RHSTU_CIDADE {
             ID_CIDADE: municipio.id,
             ID_ESTADO: municipio.microrregiao.mesorregiao.UF.id,
             NM_CIDADE: municipio.nome.clone(),
             CD_IBGE: municipio.id,
-            NR_DDD: ibge_code_to_ddd
-                .get(&municipio.id.to_string())
-                .expect("ddd not found")
-                .clone()
-                .parse()
-                .expect("DDD"),
+            NR_DDD: ddd_num,
             DT_CADASTRO: created_at.clone(),
             NM_USUARIO: created_by.clone(),
         };

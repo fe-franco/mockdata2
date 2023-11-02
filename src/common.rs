@@ -59,13 +59,9 @@ pub(crate) fn random_br_phone() -> u32 {
 pub(crate) fn random_cep() -> u32 {
     // returns a valid BR CEP
     let mut rng = rand::thread_rng();
-    let cep: u32 = format!(
-        "{:05}-{:03}",
-        rng.gen_range(0..99999),
-        rng.gen_range(0..999)
-    )
-    .parse()
-    .unwrap();
+    let cep: u32 = format!("{:05}{:03}", rng.gen_range(0..99999), rng.gen_range(0..999))
+        .parse()
+        .unwrap();
     cep
 }
 
