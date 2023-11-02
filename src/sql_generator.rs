@@ -76,7 +76,6 @@ impl<T> SqlGenerator<T> {
             writeln!(writer, "{}", item.to_insert_sql(&table_name))?;
         }
 
-        println!("SQL file generated!");
         Ok(())
     }
 }
