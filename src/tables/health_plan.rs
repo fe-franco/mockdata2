@@ -8,12 +8,11 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::common::{random_br_phone, random_cnpj, ProgressBarHelper};
+use crate::{common::{random_br_phone, random_cnpj, ProgressBarHelper}, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
 // - T_RHSTU_PLANO_SAUDE - "ID_PLANO_SAUDE","DS_RAZAO_SOCIAL","NM_FANTASIA_PLANO_SAUDE","DS_PLANO_SAUDE","NR_CNPJ","NM_CONTATO","DS_TELEFONE","DT_INICIO","DT_FIM","DT_CADASTRO","NM_USUARIO"
-pub(crate) struct HealthPlan {
+define_and_impl_sql_insertable!(
+T_RHSTU_PLANO_SAUDE {
     ID_PLANO_SAUDE: u32,
     DS_RAZAO_SOCIAL: String,
     NM_FANTASIA_PLANO_SAUDE: String,
@@ -24,12 +23,10 @@ pub(crate) struct HealthPlan {
     DT_INICIO: String,
     DT_FIM: String,
     DT_CADASTRO: String,
-    NM_USUARIO: String,
-}
-// - T_RHSTU_PACIENTE_PLANO_SAUDE - "ID_PACIENTE_PS","ID_PACIENTE","ID_PLANO_SAUDE","NR_CARTEIRA_PS","DT_INICIO","DT_FIM","DT_CADASTRO","NM_USUARIO"
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct PatientHealthPlan {
+    NM_USUARIO: String
+},
+
+T_RHSTU_PACIENTE_PLANO_SAUDE {
     ID_PACIENTE_PS: u32,
     ID_PACIENTE: u32,
     ID_PLANO_SAUDE: u32,
@@ -37,23 +34,24 @@ pub(crate) struct PatientHealthPlan {
     DT_INICIO: String,
     DT_FIM: String,
     DT_CADASTRO: String,
-    NM_USUARIO: String,
+    NM_USUARIO: String
 }
+);
 
 pub(crate) fn generate_health_plans(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<HealthPlan> {
+) -> Vec<T_RHSTU_PLANO_SAUDE> {
     // println!("Generating health plans...");
-    let mut health_plans: Vec<HealthPlan> = Vec::with_capacity(total);
+    let mut health_plans: Vec<T_RHSTU_PLANO_SAUDE> = Vec::with_capacity(total);
     let mut writer = csv::Writer::from_path("data/health_plan.csv").unwrap();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Health Plans:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
-        let health_plan = HealthPlan {
+        let health_plan = T_RHSTU_PLANO_SAUDE {
             ID_PLANO_SAUDE: i as u32,
             DS_RAZAO_SOCIAL: CompanyName().fake(),
             NM_FANTASIA_PLANO_SAUDE: CompanyName().fake(),
@@ -67,12 +65,13 @@ pub(crate) fn generate_health_plans(
             NM_USUARIO: "1".to_string(),
         };
 
-        writer.serialize(&health_plan).unwrap();
-
         health_plans.push(health_plan);
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(health_plans.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -81,13 +80,13 @@ pub(crate) fn generate_health_plans(
 
 pub(crate) async fn generate_patient_health_plans(
     total: usize,
-    health_plans: Vec<HealthPlan>,
+    health_plans: Vec<T_RHSTU_PLANO_SAUDE>,
     total_patients: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<PatientHealthPlan> {
+) -> Vec<T_RHSTU_PACIENTE_PLANO_SAUDE> {
     // println!("Generating patient health plans...");
-    let mut patient_health_plans: Vec<PatientHealthPlan> = Vec::with_capacity(total);
+    let mut patient_health_plans: Vec<T_RHSTU_PACIENTE_PLANO_SAUDE> = Vec::with_capacity(total);
     let mut rng = rand::thread_rng();
 
     let mut writer = csv::Writer::from_path("data/patient_health_plan.csv").unwrap();
@@ -96,7 +95,7 @@ pub(crate) async fn generate_patient_health_plans(
     let pb = &pb_helper.pb;
 
     for i in 0..total {
-        let patient_health_plan = PatientHealthPlan {
+        let patient_health_plan = T_RHSTU_PACIENTE_PLANO_SAUDE {
             ID_PACIENTE_PS: i as u32,
             ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
             ID_PLANO_SAUDE: health_plans
@@ -110,12 +109,13 @@ pub(crate) async fn generate_patient_health_plans(
             NM_USUARIO: "1".to_string(),
         };
 
-        writer.serialize(&patient_health_plan).unwrap();
-
         patient_health_plans.push(patient_health_plan);
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(patient_health_plans.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 

@@ -5,37 +5,31 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::common::ProgressBarHelper;
+use crate::{common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
 // - T_RHSTU_CONSULTA - "ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE","ID_FUNC","DT_HR_CONSULTA","NR_CONSULTORIO","DT_CADASTRO","NM_USUARIO"
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Consultation {
-    pub(crate) ID_UNID_HOSPITAL: u32,
-    pub(crate) ID_CONSULTA: u32,
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) ID_FUNC: u32,
-    pub(crate) DT_HR_CONSULTA: String,
-    pub(crate) NR_CONSULTORIO: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
 
-// - T_RHSTU_FORMA_PAGAMENTO - "ID_FORMA_PAGTO","NM_FORMA_PAGTO","DS_FORMA_PAGTO","ST_FORMA_PAGTO","DT_CADASTRO","NM_USUARIO"
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct PaymentMethod {
+define_and_impl_sql_insertable!(
+T_RHSTU_CONSULTA {
+    ID_UNID_HOSPITAL: u32,
+    ID_CONSULTA: u32,
+    ID_PACIENTE: u32,
+    ID_FUNC: u32,
+    DT_HR_CONSULTA: String,
+    NR_CONSULTORIO: String,
+    DT_CADASTRO: String,
+    NM_USUARIO: String
+},
+
+T_RHSTU_FORMA_PAGAMENTO {
     ID_FORMA_PAGTO: u32,
     NM_FORMA_PAGTO: String,
     DS_FORMA_PAGTO: String,
     ST_FORMA_PAGTO: String,
     DT_CADASTRO: String,
-    NM_USUARIO: String,
-}
+    NM_USUARIO: String
+},
 
-// - T_RHSTU_CONSULTA_FORMA_PAGTO - "ID_CONSULTA_FORMA_PAGTO","ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE_PS","ID_FORMA_PAGTO","DT_PAGTO_CONSULTA","ST_PAGTO_CONSULTA","DT_CADASTRO","NM_USUARIO"
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct ConsultationPaymentMethod {
+T_RHSTU_CONSULTA_FORMA_PAGTO {
     ID_CONSULTA_FORMA_PAGTO: u32,
     ID_UNID_HOSPITAL: u32,
     ID_CONSULTA: u32,
@@ -44,8 +38,9 @@ pub(crate) struct ConsultationPaymentMethod {
     DT_PAGTO_CONSULTA: String,
     ST_PAGTO_CONSULTA: String,
     DT_CADASTRO: String,
-    NM_USUARIO: String,
+    NM_USUARIO: String
 }
+);
 
 pub(crate) async fn generate_consultations(
     total: usize,
@@ -53,17 +48,16 @@ pub(crate) async fn generate_consultations(
     total_patients: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Consultation> {
+) -> Vec<T_RHSTU_CONSULTA> {
     // println!("Generating consultations...");
-    let mut writer = csv::Writer::from_path("data/consultation.csv").unwrap();
-    let mut consultations: Vec<Consultation> = Vec::new();
+    let mut consultations: Vec<T_RHSTU_CONSULTA> = Vec::new();
     let mut rng = rand::thread_rng();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Consultations:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
-        let consultation = Consultation {
+        let consultation = T_RHSTU_CONSULTA {
             ID_UNID_HOSPITAL: rng.gen_range(1..total_hospitals) as u32,
             ID_CONSULTA: i as u32,
             ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
@@ -74,11 +68,13 @@ pub(crate) async fn generate_consultations(
             NM_USUARIO: "1".to_string(),
         };
 
-        writer.serialize(&consultation).unwrap();
         consultations.push(consultation);
         pb.inc(1); // Increment the progress bar
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(consultations.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
     consultations
@@ -88,16 +84,16 @@ pub(crate) async fn generate_payment_methods(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<PaymentMethod> {
+) -> Vec<T_RHSTU_FORMA_PAGAMENTO> {
     // println!("Generating payment methods...");
     let mut writer = csv::Writer::from_path("data/payment_method.csv").unwrap();
-    let mut payment_methods: Vec<PaymentMethod> = Vec::new();
+    let mut payment_methods: Vec<T_RHSTU_FORMA_PAGAMENTO> = Vec::new();
 
     let pb_helper = ProgressBarHelper::new(m, total, "Payment Methods:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
-        let payment_method = PaymentMethod {
+        let payment_method = T_RHSTU_FORMA_PAGAMENTO {
             ID_FORMA_PAGTO: i as u32,
             NM_FORMA_PAGTO: Name().fake(),
             DS_FORMA_PAGTO: Name().fake(),
@@ -109,11 +105,13 @@ pub(crate) async fn generate_payment_methods(
             NM_USUARIO: "1".to_string(),
         };
 
-        writer.serialize(&payment_method).unwrap();
         payment_methods.push(payment_method);
         pb.inc(1); // Increment the progress bar
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(payment_methods.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
     payment_methods
@@ -121,8 +119,8 @@ pub(crate) async fn generate_payment_methods(
 
 pub(crate) async fn generate_consultation_payment_methods(
     total: usize,
-    payment_methods: Vec<PaymentMethod>,
-    consultations: Vec<Consultation>,
+    payment_methods: Vec<T_RHSTU_FORMA_PAGAMENTO>,
+    consultations: Vec<T_RHSTU_CONSULTA>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) {
@@ -132,13 +130,14 @@ pub(crate) async fn generate_consultation_payment_methods(
     let mut writer = csv::Writer::from_path("data/consultation_payment_method.csv").unwrap();
     let pb_helper = ProgressBarHelper::new(m, total, "Consultation Payment Methods:".to_string());
     let pb = &pb_helper.pb;
+    let mut consultation_payment_methods: Vec<T_RHSTU_CONSULTA_FORMA_PAGTO> = Vec::new();
 
     for i in 0..total {
         let payment_method = payment_methods.choose(&mut rng).unwrap();
 
         let consultation = consultations.choose(&mut rng).unwrap();
 
-        let consultation_payment_method = ConsultationPaymentMethod {
+        let consultation_payment_method = T_RHSTU_CONSULTA_FORMA_PAGTO {
             ID_CONSULTA_FORMA_PAGTO: i as u32,
             ID_UNID_HOSPITAL: consultation.ID_UNID_HOSPITAL,
             ID_CONSULTA: consultation.ID_CONSULTA,
@@ -150,10 +149,13 @@ pub(crate) async fn generate_consultation_payment_methods(
             NM_USUARIO: "1".to_string(),
         };
 
-        writer.serialize(&consultation_payment_method).unwrap();
+        consultation_payment_methods.push(consultation_payment_method);
         pb.inc(1); // Increment the progress bar
         main_pb.inc(1);
     }
+    
+    let generator = SqlGenerator::new(consultation_payment_methods.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 }
