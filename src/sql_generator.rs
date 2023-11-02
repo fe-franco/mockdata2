@@ -77,16 +77,17 @@ impl<T> SqlGenerator<T> {
         let file = File::create(&filename)?;
         let mut writer = BufWriter::new(file);
 
-        writer.write_all(b"INSERT ALL\n")?;
-
-        for item in &self.data {
-            let sql = item.to_insert_sql(table_name);
-            writer.write_all(sql.as_bytes())?;
-            writer.write_all(b"\n")?;
-            pb.inc(1);
+        for chunk in self.data.chunks(500) {
+            writer.write_all(b"INSERT ALL\n")?;
+            for item in chunk {
+                let sql = item.to_insert_sql(table_name);
+                writer.write_all(sql.as_bytes())?;
+                writer.write_all(b"\n")?;
+                pb.inc(1);
+            }
+            writer.write_all(format!("SELECT * FROM dual;\n").as_bytes())?;
+            writer.write_all(format!("commit;\n").as_bytes())?;
         }
-
-        writer.write_all(format!("SELECT * FROM dual;\n").as_bytes())?;
 
         Ok(())
     }
