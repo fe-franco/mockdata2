@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex};
 
 define_and_impl_sql_insertable!(
     T_RHSTU_UNID_HOSPITALAR {
-        ID_UNID_HOSPITAL: u32,
+        ID_UNID_HOSPITAL: u64,
         NM_UNID_HOSPITALAR: String,
         NM_RAZAO_SOCIAL_UNID_HOSP: String,
         DT_FUNDACAO: String,
@@ -30,38 +30,38 @@ define_and_impl_sql_insertable!(
         NM_USUARIO: String
     },
     T_RHSTU_ENDERECO_UNIDHOSP {
-        ID_UNID_HOSPITAL: u32,
-        ID_BAIRRO: u32,
-        ID_CIDADE: u32,
-        ID_ESTADO: u32,
-        NR_CEP: u32,
-        NR_DDD: u32,
+        ID_UNID_HOSPITAL: u64,
+        ID_BAIRRO: u64,
+        ID_CIDADE: u64,
+        ID_ESTADO: u64,
+        NR_CEP: u64,
+        NR_DDD: u64,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_FUNCIONARIO {
-        ID_FUNC: u32,
-        ID_SUPERIOR: u32,
+        ID_FUNC: u64,
+        ID_SUPERIOR: u64,
         NM_FUNC: String,
         DS_CARGO: String,
         DT_NASCIMENTO: String,
         VL_SALARIO: String,
-        NR_RG: u32,
-        NR_CPF: u32,
+        NR_RG: u64,
+        NR_CPF: u64,
         ST_FUNC: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_MEDICO {
-        ID_FUNC: u32,
-        NR_CRM: u32,
+        ID_FUNC: u64,
+        NR_CRM: u64,
         DS_ESPECIALIDADE: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_MOTORISTA {
-        ID_FUNC: u32,
-        NR_CNH: u32,
+        ID_FUNC: u64,
+        NR_CNH: u64,
         NM_CATEGORIA_CNH: String,
         DT_VALIDADE_CNH: String,
         DT_CADASTRO: String,
@@ -83,7 +83,7 @@ pub(crate) async fn generate_hospital(
 
     for i in 0..total {
         let hospital = T_RHSTU_UNID_HOSPITALAR {
-            ID_UNID_HOSPITAL: i as u32,
+            ID_UNID_HOSPITAL: i as u64,
             NM_UNID_HOSPITALAR: CompanyName().fake(),
             NM_RAZAO_SOCIAL_UNID_HOSP: CompanyName().fake(),
             DT_FUNDACAO: current_timestamp(),
@@ -137,7 +137,7 @@ pub(crate) async fn generate_hospital_address(
             .unwrap();
 
         let hospital_address = T_RHSTU_ENDERECO_UNIDHOSP {
-            ID_UNID_HOSPITAL: i as u32,
+            ID_UNID_HOSPITAL: i as u64,
             ID_BAIRRO: trhstu_bairro.ID_BAIRRO,
             ID_CIDADE: trhstu_cidade.ID_CIDADE,
             ID_ESTADO: trhstu_cidade.ID_ESTADO,
@@ -166,7 +166,7 @@ pub(crate) async fn generate_employee(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<u32> {
+) -> Vec<u64> {
     let pb_helper = ProgressBarHelper::new(m, total * 2, "Employees:".to_string());
     let pb = &pb_helper.pb;
 
@@ -175,8 +175,8 @@ pub(crate) async fn generate_employee(
         .map(|i| {
             let mut rng = rand::thread_rng();
             let employee = T_RHSTU_FUNCIONARIO {
-                ID_FUNC: i as u32,
-                ID_SUPERIOR: i as u32,
+                ID_FUNC: i as u64,
+                ID_SUPERIOR: i as u64,
                 NM_FUNC: Name().fake(),
                 DS_CARGO: Name().fake(),
                 DT_NASCIMENTO: current_timestamp(),
@@ -204,7 +204,7 @@ pub(crate) async fn generate_employee(
 }
 
 pub(crate) async fn generate_doctor(
-    employee_ids: Arc<Mutex<Vec<u32>>>,
+    employee_ids: Arc<Mutex<Vec<u64>>>,
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
@@ -224,7 +224,7 @@ pub(crate) async fn generate_doctor(
     for i in 0..total {
         let doctor = T_RHSTU_MEDICO {
             ID_FUNC: employee_ids_guard[i],
-            NR_CRM: rng.gen_range(1000000..9999999) as u32,
+            NR_CRM: rng.gen_range(1000000..9999999) as u64,
             DS_ESPECIALIDADE: Name().fake(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
@@ -248,7 +248,7 @@ pub(crate) async fn generate_doctor(
 }
 
 pub(crate) async fn generate_driver(
-    employee_ids: Arc<Mutex<Vec<u32>>>,
+    employee_ids: Arc<Mutex<Vec<u64>>>,
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
@@ -268,7 +268,7 @@ pub(crate) async fn generate_driver(
     for i in 0..total {
         let driver = T_RHSTU_MOTORISTA {
             ID_FUNC: employee_ids_guard[i],
-            NR_CNH: rng.gen_range(1000000..9999999) as u32,
+            NR_CNH: rng.gen_range(1000000..9999999) as u64,
             NM_CATEGORIA_CNH: ["A", "B", "C", "D", "E"]
                 .choose(&mut rng)
                 .unwrap()

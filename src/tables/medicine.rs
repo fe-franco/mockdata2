@@ -14,7 +14,7 @@ use crate::{bulario::BularioClient, common::{ProgressBarHelper, current_timestam
 
 define_and_impl_sql_insertable!(
     T_RHSTU_MEDICAMENTO {
-        ID_MEDICAMENTO: u32,
+        ID_MEDICAMENTO: u64,
         NM_MEDICAMENTO: String,
         DS_DETALHADA_MEDICAMENTO: String,
         NR_CODIGO_BARRAS: String,
@@ -22,10 +22,10 @@ define_and_impl_sql_insertable!(
         NM_USUARIO: String
     },
     T_RHSTU_PRESCRICAO_MEDICA {
-        ID_PRESCRICAO_MEDICA: u32,
-        ID_UNID_HOSPITAL: u32,
-        ID_CONSULTA: u32,
-        ID_MEDICAMENTO: u32,
+        ID_PRESCRICAO_MEDICA: u64,
+        ID_UNID_HOSPITAL: u64,
+        ID_CONSULTA: u64,
+        ID_MEDICAMENTO: u64,
         DS_POSOLOGIA: String,
         DS_VIA: String,
         DS_OBSERVACAO_USO: String,
@@ -37,7 +37,7 @@ define_and_impl_sql_insertable!(
 
 #[derive(Deserialize, Debug, Serialize)]
 struct MedicineCategories {
-    id: u32,
+    id: u64,
     descricao: String,
     ativo: String,
 }
@@ -150,7 +150,7 @@ async fn process_category(
 
     for page in 1..body_first.totalPages {
         pb.set_message("");
-        let result = match client.fetch_medicines_by_category(category_id, page as u32).await {
+        let result = match client.fetch_medicines_by_category(category_id, page as u64).await {
             Ok(result) => result,
             Err(_) => {
                 pb.set_message(format!("Error fetching page {}, skiping", page));
@@ -193,9 +193,9 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
         let medicine = medicines.choose(&mut rand::thread_rng()).unwrap();
 
         let medical_prescription = T_RHSTU_PRESCRICAO_MEDICA {
-            ID_PRESCRICAO_MEDICA: i as u32,
-            ID_UNID_HOSPITAL: rand::thread_rng().gen_range(1..100) as u32,
-            ID_CONSULTA: rand::thread_rng().gen_range(1..100) as u32,
+            ID_PRESCRICAO_MEDICA: i as u64,
+            ID_UNID_HOSPITAL: rand::thread_rng().gen_range(1..100) as u64,
+            ID_CONSULTA: rand::thread_rng().gen_range(1..100) as u64,
             ID_MEDICAMENTO: medicine.ID_MEDICAMENTO,
             DS_POSOLOGIA: "DS_POSOLOGIA".to_string(),
             DS_VIA: "DS_VIA".to_string(),

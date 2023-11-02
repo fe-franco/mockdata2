@@ -11,22 +11,22 @@ use std::sync::Arc;
 
 define_and_impl_sql_insertable!(
     T_RHSTU_PACIENTE {
-        pub(crate) ID_PACIENTE: u32,
+        pub(crate) ID_PACIENTE: u64,
         pub(crate) NM_PACIENTE: String,
-        pub(crate) NR_CPF: u32,
-        pub(crate) NM_RG: u32,
+        pub(crate) NR_CPF: u64,
+        pub(crate) NM_RG: u64,
         pub(crate) DT_NASCIMENTO: String,
         pub(crate) FL_SEXO_BIOLOGICO: String,
         pub(crate) DS_ESCOLARIDADE: String,
         pub(crate) DS_ESTADO_CIVIL: String,
         pub(crate) NM_GRUPO_SANGUINEO: String,
-        pub(crate) NR_ALTURA: u32,
-        pub(crate) NR_PESO: u32,
+        pub(crate) NR_ALTURA: u64,
+        pub(crate) NR_PESO: u64,
         pub(crate) DT_CADASTRO: String,
         pub(crate) NM_USUARIO: String
     },
     T_RHSTU_TIPO_CONTATO {
-        pub(crate) ID_TIPO_CONTATO: u32,
+        pub(crate) ID_TIPO_CONTATO: u64,
         pub(crate) NM_TIPO_CONTATO: String,
         pub(crate) DT_INICIO: String,
         pub(crate) DT_FIM: String,
@@ -34,19 +34,19 @@ define_and_impl_sql_insertable!(
         pub(crate) NM_USUARIO: String
     },
     T_RHSTU_CONTATO_PACIENTE {
-        pub(crate) ID_PACIENTE: u32,
-        pub(crate) ID_CONTATO: u32,
-        pub(crate) ID_TIPO_CONTATO: u32,
+        pub(crate) ID_PACIENTE: u64,
+        pub(crate) ID_CONTATO: u64,
+        pub(crate) ID_TIPO_CONTATO: u64,
         pub(crate) NM_CONTATO: String,
-        pub(crate) NR_DDI: u32,
-        pub(crate) NR_DDD: u32,
+        pub(crate) NR_DDI: u64,
+        pub(crate) NR_DDD: u64,
         pub(crate) NR_TELEFONE: String,
         pub(crate) DT_CADASTRO: String,
         pub(crate) NM_USUARIO: String
     },
     T_RHSTU_EMAIL_PACIENTE {
-        pub(crate) ID_EMAIL: u32,
-        pub(crate) ID_PACIENTE: u32,
+        pub(crate) ID_EMAIL: u64,
+        pub(crate) ID_PACIENTE: u64,
         pub(crate) DS_EMAIL: String,
         pub(crate) TP_EMAIL: String,
         pub(crate) ST_EMAIL: String,
@@ -54,20 +54,20 @@ define_and_impl_sql_insertable!(
         pub(crate) NM_USUARIO: String
     },
     T_RHSTU_TELEFONE_PACIENTE {
-        pub(crate) ID_PACIENTE: u32,
-        pub(crate) ID_TELEFONE: u32,
-        pub(crate) NR_DDI: u32,
-        pub(crate) NR_DDD: u32,
-        pub(crate) NR_TELEFONE: u32,
+        pub(crate) ID_PACIENTE: u64,
+        pub(crate) ID_TELEFONE: u64,
+        pub(crate) NR_DDI: u64,
+        pub(crate) NR_DDD: u64,
+        pub(crate) NR_TELEFONE: u64,
         pub(crate) TP_TELEFONE: String,
         pub(crate) ST_TELEFONE: String,
         pub(crate) DT_CADASTRO: String,
         pub(crate) NM_USUARIO: String
     },
     T_RHSTU_ENDERECO_PACIENTE {
-        pub(crate) ID_ENDERECO: u32,
-        pub(crate) ID_PACIENTE: u32,
-        pub(crate) ID_LOGRADOURO: u32,
+        pub(crate) ID_ENDERECO: u64,
+        pub(crate) ID_PACIENTE: u64,
+        pub(crate) ID_LOGRADOURO: u64,
         pub(crate) NR_LOGRADOURO: String,
         pub(crate) DS_COMPLEMENTO_NUMERO: String,
         pub(crate) DS_PONTO_REFERENCIA: String,
@@ -94,7 +94,7 @@ pub(crate) async fn generate_patients(
 
             let mut rng = rand::thread_rng();
             T_RHSTU_PACIENTE {
-                ID_PACIENTE: i as u32,
+                ID_PACIENTE: i as u64,
                 NM_PACIENTE: Name().fake(),
                 NR_CPF: random_cpf(),
                 NM_RG: random_rg(),
@@ -114,8 +114,8 @@ pub(crate) async fn generate_patients(
                     .to_string(),
                 DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: Name().fake(),
-                NR_ALTURA: rng.gen_range(1.0..2.0) as u32,
-                NR_PESO: rng.gen_range(50.0..100.0) as u32,
+                NR_ALTURA: rng.gen_range(1.0..2.0) as u64,
+                NR_PESO: rng.gen_range(50.0..100.0) as u64,
             }
         })
         .collect();
@@ -142,7 +142,7 @@ pub(crate) async fn generate_contact_types(
 
             let mut rng = rand::thread_rng();
             T_RHSTU_TIPO_CONTATO {
-                ID_TIPO_CONTATO: i as u32,
+                ID_TIPO_CONTATO: i as u64,
                 // pick a random emergency contact type relationship to the patient
                 NM_TIPO_CONTATO: ["Pessoal", "Trabalho", "Emergência"]
                     .choose(&mut rng)
@@ -182,12 +182,12 @@ pub(crate) async fn generate_patient_contacts(
             let mut rng = rand::thread_rng();
             let contact_type = contact_types.choose(&mut rng).unwrap();
             T_RHSTU_CONTATO_PACIENTE {
-                ID_PACIENTE: i as u32,
-                ID_CONTATO: i as u32,
+                ID_PACIENTE: i as u64,
+                ID_CONTATO: i as u64,
                 ID_TIPO_CONTATO: contact_type.ID_TIPO_CONTATO,
                 NM_CONTATO: Name().fake(),
-                NR_DDI: rng.gen_range(1..100) as u32,
-                NR_DDD: rng.gen_range(1..100) as u32,
+                NR_DDI: rng.gen_range(1..100) as u64,
+                NR_DDD: rng.gen_range(1..100) as u64,
                 NR_TELEFONE: rng.gen_range(1..100).to_string(),
                 DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
@@ -219,8 +219,8 @@ pub(crate) async fn generate_emails(
             let mut rng = rand::thread_rng();
 
             T_RHSTU_EMAIL_PACIENTE {
-                ID_EMAIL: i as u32,
-                ID_PACIENTE: i as u32,
+                ID_EMAIL: i as u64,
+                ID_PACIENTE: i as u64,
                 DS_EMAIL: FreeEmail().fake(),
                 TP_EMAIL: ["Pessoal", "Trabalho"]
                     .choose(&mut rng)
@@ -260,9 +260,9 @@ pub(crate) async fn generate_telephones(
             let mut rng = rand::thread_rng();
 
             T_RHSTU_TELEFONE_PACIENTE {
-                ID_PACIENTE: i as u32,
-                ID_TELEFONE: i as u32,
-                NR_DDI: rng.gen_range(1..100) as u32,
+                ID_PACIENTE: i as u64,
+                ID_TELEFONE: i as u64,
+                NR_DDI: rng.gen_range(1..100) as u64,
                 NR_DDD: *ddds.choose(&mut rng).unwrap(),
                 NR_TELEFONE: random_br_phone(),
                 TP_TELEFONE: ["Pessoal", "Trabalho"]
@@ -304,7 +304,7 @@ pub(crate) async fn generate_patients_addresses(
 
             T_RHSTU_ENDERECO_PACIENTE {
                 ID_ENDERECO: chosen_address.ID_LOGRADOURO,
-                ID_PACIENTE: i as u32,
+                ID_PACIENTE: i as u64,
                 ID_LOGRADOURO: chosen_address.ID_LOGRADOURO,
                 NR_LOGRADOURO: rng.gen_range(1..100).to_string(),
                 DS_COMPLEMENTO_NUMERO: "DS_COMPLEMENTO_NUMERO".to_string(),

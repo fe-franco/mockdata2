@@ -16,34 +16,34 @@ use crate::{
 
 define_and_impl_sql_insertable!(
     T_RHSTU_ESTADO {
-        pub ID_ESTADO: u32,
+        pub ID_ESTADO: u64,
         SG_ESTADO: String,
         NM_ESTADO: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_CIDADE {
-        pub ID_CIDADE: u32,
-        pub ID_ESTADO: u32,
+        pub ID_CIDADE: u64,
+        pub ID_ESTADO: u64,
         NM_CIDADE: String,
-        CD_IBGE: u32,
-        pub NR_DDD: u32,
+        CD_IBGE: u64,
+        pub NR_DDD: u64,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_BAIRRO {
-        pub ID_BAIRRO: u32,
-        pub ID_CIDADE: u32,
+        pub ID_BAIRRO: u64,
+        pub ID_CIDADE: u64,
         NM_BAIRRO: String,
         NM_ZONA_BAIRRO: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_LOGRADOURO {
-        pub ID_LOGRADOURO: u32,
-        pub ID_BAIRRO: u32,
+        pub ID_LOGRADOURO: u64,
+        pub ID_BAIRRO: u64,
         NM_LOGRADOURO: String,
-        NR_CEP: u32,
+        NR_CEP: u64,
         DT_CADASTRO: String,
         NM_USUARIO: String
     }
@@ -111,7 +111,7 @@ pub(crate) async fn generate_cities(
             .get(&municipio.id.to_string())
             .expect("ddd not found")
             .clone();
-        let ddd_num: u32 = match ddd.parse() {
+        let ddd_num: u64 = match ddd.parse() {
             Ok(num) => num,
             Err(_) => {
                 pb.set_message("Error parsing ddd");
@@ -156,7 +156,7 @@ fn get_ibge_code_to_ddd() -> Result<HashMap<String, String>, anyhow::Error> {
     Ok(ibge_code_to_ddd)
 }
 
-pub(crate) fn get_ddds() -> Result<Vec<u32>, anyhow::Error> {
+pub(crate) fn get_ddds() -> Result<Vec<u64>, anyhow::Error> {
     let mut ddds = Vec::new();
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b';')
@@ -164,7 +164,7 @@ pub(crate) fn get_ddds() -> Result<Vec<u32>, anyhow::Error> {
     for result in reader.deserialize() {
         let record: HashMap<String, String> = result?;
         let ddd = record.get("CN").unwrap();
-        ddds.push(ddd.parse::<u32>()?);
+        ddds.push(ddd.parse::<u64>()?);
     }
     Ok(ddds)
 }
@@ -187,7 +187,7 @@ pub(crate) async fn generate_neighborhoods(
 
     for neighborhood in json.iter() {
         let neighborhood_data: T_RHSTU_BAIRRO = T_RHSTU_BAIRRO {
-            ID_BAIRRO: pb.position().try_into().expect("cant fit into u32"),
+            ID_BAIRRO: pb.position().try_into().expect("cant fit into u64"),
             ID_CIDADE: neighborhood.municipio.id,
             NM_BAIRRO: neighborhood.nome.clone(),
             NM_ZONA_BAIRRO: [
@@ -240,7 +240,7 @@ pub(crate) fn generate_address(
             .ID_BAIRRO as usize;
 
         let address_data: T_RHSTU_LOGRADOURO = T_RHSTU_LOGRADOURO {
-            ID_LOGRADOURO: i.try_into().expect("cant fit into u32"),
+            ID_LOGRADOURO: i.try_into().expect("cant fit into u64"),
             ID_BAIRRO: neighborhood_id.try_into().expect("cant fit into usize"),
             NM_LOGRADOURO: street_name,
             NR_CEP: random_cep(),
@@ -263,14 +263,14 @@ pub(crate) fn generate_address(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Regiao {
-    id: u32,
+    id: u64,
     sigla: String,
     nome: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Microrregiao {
-    id: u32,
+    id: u64,
     nome: String,
     mesorregiao: Mesorregiao,
 }
@@ -278,14 +278,14 @@ struct Microrregiao {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
 struct Mesorregiao {
-    id: u32,
+    id: u64,
     nome: String,
     UF: UF,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct UF {
-    id: u32,
+    id: u64,
     sigla: String,
     nome: String,
     regiao: Regiao,
@@ -293,14 +293,14 @@ struct UF {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Municipio {
-    id: u32,
+    id: u64,
     nome: String,
     microrregiao: Microrregiao,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Distrito {
-    id: u32,
+    id: u64,
     nome: String,
     municipio: Municipio,
 }

@@ -9,13 +9,13 @@ const BASE_URL: &str = "https://consultas.anvisa.gov.br";
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Category {
-    pub(crate) id: u32,
+    pub(crate) id: u64,
 }
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub(crate) struct Medication {
-    pub(crate) idProduto: u32,
+    pub(crate) idProduto: u64,
     pub(crate) numeroRegistro: String,
     pub(crate) nomeProduto: String,
     pub(crate) expediente: String,
@@ -119,7 +119,7 @@ impl BularioClient {
     pub async fn fetch_medicines_by_category(
         &self,
         id_categoria: usize,
-        pagina: u32,
+        pagina: u64,
     ) -> Result<MedicineApi, anyhow::Error> {
         let url = format!(
             "{}/api/consulta/bulario?count=100&filter%5BcategoriasRegulatorias%5D={}&page={}",

@@ -16,22 +16,22 @@ use crate::{
 // - T_RHSTU_PLANO_SAUDE - "ID_PLANO_SAUDE","DS_RAZAO_SOCIAL","NM_FANTASIA_PLANO_SAUDE","DS_PLANO_SAUDE","NR_CNPJ","NM_CONTATO","DS_TELEFONE","DT_INICIO","DT_FIM","DT_CADASTRO","NM_USUARIO"
 define_and_impl_sql_insertable!(
     T_RHSTU_PLANO_SAUDE {
-        ID_PLANO_SAUDE: u32,
+        ID_PLANO_SAUDE: u64,
         DS_RAZAO_SOCIAL: String,
         NM_FANTASIA_PLANO_SAUDE: String,
         DS_PLANO_SAUDE: String,
         NR_CNPJ: String,
         NM_CONTATO: String,
-        DS_TELEFONE: u32,
+        DS_TELEFONE: u64,
         DT_INICIO: String,
         DT_FIM: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_PACIENTE_PLANO_SAUDE {
-        ID_PACIENTE_PS: u32,
-        ID_PACIENTE: u32,
-        ID_PLANO_SAUDE: u32,
+        ID_PACIENTE_PS: u64,
+        ID_PACIENTE: u64,
+        ID_PLANO_SAUDE: u64,
         NR_CARTEIRA_PS: String,
         DT_INICIO: String,
         DT_FIM: String,
@@ -53,7 +53,7 @@ pub(crate) fn generate_health_plans(
 
     for i in 0..total {
         let health_plan = T_RHSTU_PLANO_SAUDE {
-            ID_PLANO_SAUDE: i as u32,
+            ID_PLANO_SAUDE: i as u64,
             DS_RAZAO_SOCIAL: CompanyName().fake(),
             NM_FANTASIA_PLANO_SAUDE: CompanyName().fake(),
             DS_PLANO_SAUDE: CompanyName().fake(),
@@ -95,8 +95,8 @@ pub(crate) async fn generate_patient_health_plans(
 
     for i in 0..total {
         let patient_health_plan = T_RHSTU_PACIENTE_PLANO_SAUDE {
-            ID_PACIENTE_PS: i as u32,
-            ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
+            ID_PACIENTE_PS: i as u64,
+            ID_PACIENTE: rng.gen_range(1..total_patients) as u64,
             ID_PLANO_SAUDE: health_plans
                 .choose(&mut rand::thread_rng())
                 .unwrap()

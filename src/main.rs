@@ -169,7 +169,7 @@ async fn main() -> Result<(), anyhow::Error> {
         pb.clone(),
     ));
 
-    let employee_ids: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new(employees_task.await?));
+    let employee_ids: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(employees_task.await?));
 
     let doctors_task = tokio::spawn(tables::hospital::generate_doctor(
         employee_ids.clone(),

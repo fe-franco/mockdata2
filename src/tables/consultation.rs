@@ -13,17 +13,17 @@ use crate::{
 
 define_and_impl_sql_insertable!(
     T_RHSTU_CONSULTA {
-        ID_UNID_HOSPITAL: u32,
-        ID_CONSULTA: u32,
-        ID_PACIENTE: u32,
-        ID_FUNC: u32,
+        ID_UNID_HOSPITAL: u64,
+        ID_CONSULTA: u64,
+        ID_PACIENTE: u64,
+        ID_FUNC: u64,
         DT_HR_CONSULTA: String,
         NR_CONSULTORIO: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
     T_RHSTU_FORMA_PAGAMENTO {
-        ID_FORMA_PAGTO: u32,
+        ID_FORMA_PAGTO: u64,
         NM_FORMA_PAGTO: String,
         DS_FORMA_PAGTO: String,
         ST_FORMA_PAGTO: String,
@@ -31,11 +31,11 @@ define_and_impl_sql_insertable!(
         NM_USUARIO: String
     },
     T_RHSTU_CONSULTA_FORMA_PAGTO {
-        ID_CONSULTA_FORMA_PAGTO: u32,
-        ID_UNID_HOSPITAL: u32,
-        ID_CONSULTA: u32,
-        ID_PACIENTE_PS: u32,
-        ID_FORMA_PAGTO: u32,
+        ID_CONSULTA_FORMA_PAGTO: u64,
+        ID_UNID_HOSPITAL: u64,
+        ID_CONSULTA: u64,
+        ID_PACIENTE_PS: u64,
+        ID_FORMA_PAGTO: u64,
         DT_PAGTO_CONSULTA: String,
         ST_PAGTO_CONSULTA: String,
         DT_CADASTRO: String,
@@ -59,10 +59,10 @@ pub(crate) async fn generate_consultations(
 
     for i in 0..total {
         let consultation = T_RHSTU_CONSULTA {
-            ID_UNID_HOSPITAL: rng.gen_range(1..total_hospitals) as u32,
-            ID_CONSULTA: i as u32,
-            ID_PACIENTE: rng.gen_range(1..total_patients) as u32,
-            ID_FUNC: rng.gen_range(1..100) as u32,
+            ID_UNID_HOSPITAL: rng.gen_range(1..total_hospitals) as u64,
+            ID_CONSULTA: i as u64,
+            ID_PACIENTE: rng.gen_range(1..total_patients) as u64,
+            ID_FUNC: rng.gen_range(1..100) as u64,
             DT_HR_CONSULTA: current_timestamp(),
             NR_CONSULTORIO: rng.gen_range(1..100).to_string(),
             DT_CADASTRO: current_timestamp(),
@@ -94,7 +94,7 @@ pub(crate) async fn generate_payment_methods(
 
     for i in 0..total {
         let payment_method = T_RHSTU_FORMA_PAGAMENTO {
-            ID_FORMA_PAGTO: i as u32,
+            ID_FORMA_PAGTO: i as u64,
             NM_FORMA_PAGTO: Name().fake(),
             DS_FORMA_PAGTO: Name().fake(),
             ST_FORMA_PAGTO: ["Ativo", "Inativo"]
@@ -138,7 +138,7 @@ pub(crate) async fn generate_consultation_payment_methods(
         let consultation = consultations.choose(&mut rng).unwrap();
 
         let consultation_payment_method = T_RHSTU_CONSULTA_FORMA_PAGTO {
-            ID_CONSULTA_FORMA_PAGTO: i as u32,
+            ID_CONSULTA_FORMA_PAGTO: i as u64,
             ID_UNID_HOSPITAL: consultation.ID_UNID_HOSPITAL,
             ID_CONSULTA: consultation.ID_CONSULTA,
             ID_PACIENTE_PS: consultation.ID_PACIENTE,

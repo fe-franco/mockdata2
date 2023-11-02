@@ -3,10 +3,10 @@ use rand::{self, Rng};
 use reqwest::Client;
 use std::{env::current_dir, sync::Arc};
 
-pub(crate) fn random_cpf() -> u32 {
+pub(crate) fn random_cpf() -> u64 {
     // returns a valid CPF
     let mut rng = rand::thread_rng();
-    let cpf: u32 = format!(
+    let cpf: u64 = format!(
         "{:03}{:03}{:03}{:02}",
         rng.gen_range(0..999),
         rng.gen_range(0..999),
@@ -18,10 +18,10 @@ pub(crate) fn random_cpf() -> u32 {
     cpf
 }
 
-pub(crate) fn random_rg() -> u32 {
+pub(crate) fn random_rg() -> u64 {
     // returns a valid RG
     let mut rng = rand::thread_rng();
-    let rg: u32 = format!(
+    let rg: u64 = format!(
         "{:03}{:03}{:03}{:02}",
         rng.gen_range(0..999),
         rng.gen_range(0..999),
@@ -47,19 +47,19 @@ pub(crate) fn random_cnpj() -> String {
     cnpj
 }
 
-pub(crate) fn random_br_phone() -> u32 {
+pub(crate) fn random_br_phone() -> u64 {
     let mut rng = rand::thread_rng();
 
     // Generate a number between 9000_0000 and 9999_9999
-    let phone_number: u32 = rng.gen_range(9_000_0000..=9_999_9999);
+    let phone_number: u64 = rng.gen_range(9_000_0000..=9_999_9999);
 
     phone_number
 }
 
-pub(crate) fn random_cep() -> u32 {
+pub(crate) fn random_cep() -> u64 {
     // returns a valid BR CEP
     let mut rng = rand::thread_rng();
-    let cep: u32 = format!("{:05}{:03}", rng.gen_range(0..99999), rng.gen_range(0..999))
+    let cep: u64 = format!("{:05}{:03}", rng.gen_range(0..99999), rng.gen_range(0..999))
         .parse()
         .unwrap();
     cep
