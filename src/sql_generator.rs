@@ -6,8 +6,7 @@ use std::io::Write;
 
 // Define the SqlInsertable trait
 pub(crate) trait SqlInsertable {
-    fn to_insert_fields(&self) -> Vec<String>;
-    fn to_insert_values(&self) -> Vec<String>;
+    fn to_insert_sql(&self, table_name: &str) -> String;
 }
 
 #[macro_export]
@@ -21,19 +20,32 @@ macro_rules! define_and_impl_sql_insertable {
             }
 
             impl crate::sql_generator::SqlInsertable for $struct_name {
-                fn to_insert_fields(&self) -> Vec<String> {
-                    vec![$(stringify!($field_name).to_string()),*]
-                }
+                fn to_insert_sql(&self, table_name: &str) -> String {
+                    let mut fields = String::new();
+                    let mut values = String::new();
 
-                fn to_insert_values(&self) -> Vec<String> {
-                    vec![$({
+                    $(
+                        fields.push_str(stringify!($field_name));
+                        fields.push(',');
+
                         let value = format!("{:?}", self.$field_name);
                         if value.starts_with("\"TO_DATE") {
-                            value.replace("\"", "")
+                            values.push_str(&value.replace("\"", ""));
                         } else {
-                            value.replace("'", "").replace("\"", "'")
+                            values.push_str(&value.replace("'", "").replace("\"", "'"));
                         }
-                    }),*]
+                        values.push(',');
+                    )*
+
+                    fields.pop(); // Remove trailing comma
+                    values.pop(); // Remove trailing comma
+
+                    format!(
+                        "INTO {} ({}) VALUES ({})",
+                        table_name,
+                        fields,
+                        values
+                    )
                 }
             }
         )*
@@ -58,8 +70,6 @@ impl<T> SqlGenerator<T> {
     where
         T: SqlInsertable,
     {
-        const CHUNK_SIZE: usize = 200;
-
         let table_name = self.get_struct_name();
         let dir = "data";
         let filename = format!("{}/{}.sql", dir, table_name);
@@ -67,35 +77,16 @@ impl<T> SqlGenerator<T> {
         let file = File::create(&filename)?;
         let mut writer = BufWriter::new(file);
 
-        if self.data.is_empty() {
-            return Ok(());
+        writer.write_all(b"INSERT ALL\n")?;
+
+        for item in &self.data {
+            let sql = item.to_insert_sql(table_name);
+            writer.write_all(sql.as_bytes())?;
+            writer.write_all(b"\n")?;
+            pb.inc(1);
         }
 
-        for chunk in self.data.chunks(CHUNK_SIZE) {
-            // Write the initial part of the INSERT statement
-            let first_item = &chunk[0];
-            let fields: Vec<_> = first_item.to_insert_fields();
-            writeln!(
-                writer,
-                "INSERT INTO {} ({}) VALUES",
-                table_name,
-                fields.join(", ")
-            )?;
-
-            // Write the values for each item in the chunk
-            for (index, item) in chunk.iter().enumerate() {
-                let values: Vec<_> = item.to_insert_values();
-                write!(writer, "({})", values.join(", "))?;
-
-                if index < chunk.len() - 1 {
-                    writeln!(writer, ",")?;
-                } else {
-                    writeln!(writer, ";")?;
-                }
-
-                pb.inc(1);
-            }
-        }
+        writer.write_all(format!("SELECT * FROM dual;\n").as_bytes())?;
 
         Ok(())
     }
