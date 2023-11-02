@@ -8,34 +8,37 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{common::{random_br_phone, random_cnpj, ProgressBarHelper}, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
+use crate::{
+    common::{random_br_phone, random_cnpj, ProgressBarHelper},
+    define_and_impl_sql_insertable,
+    sql_generator::SqlGenerator,
+};
 
 // - T_RHSTU_PLANO_SAUDE - "ID_PLANO_SAUDE","DS_RAZAO_SOCIAL","NM_FANTASIA_PLANO_SAUDE","DS_PLANO_SAUDE","NR_CNPJ","NM_CONTATO","DS_TELEFONE","DT_INICIO","DT_FIM","DT_CADASTRO","NM_USUARIO"
 define_and_impl_sql_insertable!(
-T_RHSTU_PLANO_SAUDE {
-    ID_PLANO_SAUDE: u32,
-    DS_RAZAO_SOCIAL: String,
-    NM_FANTASIA_PLANO_SAUDE: String,
-    DS_PLANO_SAUDE: String,
-    NR_CNPJ: String,
-    NM_CONTATO: String,
-    DS_TELEFONE: u32,
-    DT_INICIO: String,
-    DT_FIM: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String
-},
-
-T_RHSTU_PACIENTE_PLANO_SAUDE {
-    ID_PACIENTE_PS: u32,
-    ID_PACIENTE: u32,
-    ID_PLANO_SAUDE: u32,
-    NR_CARTEIRA_PS: String,
-    DT_INICIO: String,
-    DT_FIM: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String
-}
+    T_RHSTU_PLANO_SAUDE {
+        ID_PLANO_SAUDE: u32,
+        DS_RAZAO_SOCIAL: String,
+        NM_FANTASIA_PLANO_SAUDE: String,
+        DS_PLANO_SAUDE: String,
+        NR_CNPJ: String,
+        NM_CONTATO: String,
+        DS_TELEFONE: u32,
+        DT_INICIO: String,
+        DT_FIM: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    T_RHSTU_PACIENTE_PLANO_SAUDE {
+        ID_PACIENTE_PS: u32,
+        ID_PACIENTE: u32,
+        ID_PLANO_SAUDE: u32,
+        NR_CARTEIRA_PS: String,
+        DT_INICIO: String,
+        DT_FIM: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    }
 );
 
 pub(crate) fn generate_health_plans(

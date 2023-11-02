@@ -7,35 +7,33 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tokio::task;
 
-use crate::{bulario::BularioClient, common::ProgressBarHelper};
+use crate::{bulario::BularioClient, common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
 
 // - T_RHSTU_MEDICAMENTO - "ID_MEDICAMENTO","NM_MEDICAMENTO","DS_DETALHADA_MEDICAMENTO","NR_CODIGO_BARRAS","DT_CADASTRO","NM_USUARIO"
-#[derive(Deserialize, Debug, Serialize, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Medicine {
-    pub(crate) ID_MEDICAMENTO: u32,
-    pub(crate) NM_MEDICAMENTO: String,
-    pub(crate) DS_DETALHADA_MEDICAMENTO: String,
-    pub(crate) NR_CODIGO_BARRAS: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
-#[derive(Deserialize, Debug, Serialize)]
-#[allow(non_snake_case)]
-pub(crate) struct MedicalPrescription {
-    pub(crate) ID_PRESCRICAO_MEDICA: u32,
-    pub(crate) ID_UNID_HOSPITAL: u32,
-    pub(crate) ID_CONSULTA: u32,
-    pub(crate) ID_MEDICAMENTO: u32,
-    pub(crate) DS_POSOLOGIA: String,
-    pub(crate) DS_VIA: String,
-    pub(crate) DS_OBSERVACAO_USO: String,
-    pub(crate) QT_MEDICAMENTO: String,
-    pub(crate) NM_USUARIO: String,
-    pub(crate) DT_CADASTRO: String,
-}
+
+define_and_impl_sql_insertable!(
+    T_RHSTU_MEDICAMENTO {
+        ID_MEDICAMENTO: u32,
+        NM_MEDICAMENTO: String,
+        DS_DETALHADA_MEDICAMENTO: String,
+        NR_CODIGO_BARRAS: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    T_RHSTU_PRESCRICAO_MEDICA {
+        ID_PRESCRICAO_MEDICA: u32,
+        ID_UNID_HOSPITAL: u32,
+        ID_CONSULTA: u32,
+        ID_MEDICAMENTO: u32,
+        DS_POSOLOGIA: String,
+        DS_VIA: String,
+        DS_OBSERVACAO_USO: String,
+        QT_MEDICAMENTO: String,
+        NM_USUARIO: String,
+        DT_CADASTRO: String
+    }
+);
 
 #[derive(Deserialize, Debug, Serialize)]
 struct MedicineCategories {
@@ -48,7 +46,7 @@ struct MedicineCategories {
 pub(crate) async fn get_medicines(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Medicine> {
+) -> Vec<T_RHSTU_MEDICAMENTO> {
 
     let client = Arc::new(BularioClient::new());
     let mut categories = client.fetch_categories().await.expect("Error fetching categories");
@@ -84,21 +82,21 @@ pub(crate) async fn get_medicines(
     // Wait for all tasks to complete
     futures::future::join_all(tasks).await;
 
-    let mut writer = csv::Writer::from_path("data/medicine.csv").unwrap();
     let locked_results = aggregated_results.lock().unwrap();
     
     let pb_helper = ProgressBarHelper::new(m, locked_results.len(), "Medicines:".to_string());
     let pb = &pb_helper.pb;
     
-    for medicine_data in pb.wrap_iter(locked_results.iter()) {
-        writer.serialize(medicine_data).unwrap();
-    };
 
-    let mut medicines: Vec<Medicine> = Vec::new();
+    let mut medicines: Vec<T_RHSTU_MEDICAMENTO> = Vec::new();
 
     for medicine_data in locked_results.iter() {
         medicines.push(medicine_data.clone());
+        pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(medicines.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -110,7 +108,7 @@ async fn spawn_theard(
     category_id: usize,
     pb: Arc<ProgressBar>,
     main_pb: Arc<ProgressBar>,
-    shared_results: Arc<Mutex<Vec<Medicine>>>,
+    shared_results: Arc<Mutex<Vec<T_RHSTU_MEDICAMENTO>>>,
 ){
         let main = main_pb.clone();
         let results = process_category(&client, category_id as usize, &pb, main).await;
@@ -125,7 +123,7 @@ async fn process_category(
     category_id: usize,
     pb: &ProgressBar,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Medicine> {
+) -> Vec<T_RHSTU_MEDICAMENTO> {
     let body_first = match client.fetch_medicines_by_category(category_id, 1).await {
         Ok(result) => result,
         Err(_) => {
@@ -162,7 +160,7 @@ async fn process_category(
         };
 
         for medicine in result.content {
-            let medicine_data = Medicine {
+            let medicine_data = T_RHSTU_MEDICAMENTO {
                 ID_MEDICAMENTO: medicine.idProduto,
                 NM_MEDICAMENTO: medicine.nomeProduto,
                 DS_DETALHADA_MEDICAMENTO: medicine.expediente,
@@ -183,18 +181,18 @@ async fn process_category(
 
 // MedicalPrescription
 // - T_RHSTU_PRESCRICAO_MEDICA - "ID_PRESCRICAO_MEDICA","ID_UNID_HOSPITAL","ID_CONSULTA","ID_MEDICAMENTO","DS_POSOLOGIA","DS_VIA","DS_OBSERVACAO_USO","QT_MEDICAMENTO","NM_USUARIO","DT_CADASTRO"
-pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<Medicine>,
+pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T_RHSTU_MEDICAMENTO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) {
-    let mut writer = csv::Writer::from_path("data/medical_prescription.csv").unwrap();
     let pb_helper = ProgressBarHelper::new(m, total, "Medical Prescription:".to_string());
     let pb = &pb_helper.pb;
+    let mut prescripitions: Vec<T_RHSTU_PRESCRICAO_MEDICA> = Vec::new();
 
     for i in 0..total {
         let medicine = medicines.choose(&mut rand::thread_rng()).unwrap();
 
-        let medical_prescription = MedicalPrescription {
+        let medical_prescription = T_RHSTU_PRESCRICAO_MEDICA {
             ID_PRESCRICAO_MEDICA: i as u32,
             ID_UNID_HOSPITAL: rand::thread_rng().gen_range(1..100) as u32,
             ID_CONSULTA: rand::thread_rng().gen_range(1..100) as u32,
@@ -207,10 +205,14 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<M
             DT_CADASTRO: chrono::Local::now().to_string(),
         };
 
-        writer.serialize(&medical_prescription).unwrap();
+        prescripitions.push(medical_prescription);
+
         pb.inc(1);
         main_pb.inc(1);
     }
+
+    let generator = SqlGenerator::new(prescripitions.clone());
+    generator.write_to_file();
 
     
     pb_helper.finish();

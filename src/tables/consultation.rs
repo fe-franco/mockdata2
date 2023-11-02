@@ -3,43 +3,42 @@ use std::sync::Arc;
 use fake::{faker::name::en::Name, Fake};
 use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
-use serde::{Deserialize, Serialize};
 
-use crate::{common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator};
+use crate::{
+    common::ProgressBarHelper, define_and_impl_sql_insertable, sql_generator::SqlGenerator,
+};
 // - T_RHSTU_CONSULTA - "ID_UNID_HOSPITAL","ID_CONSULTA","ID_PACIENTE","ID_FUNC","DT_HR_CONSULTA","NR_CONSULTORIO","DT_CADASTRO","NM_USUARIO"
 
 define_and_impl_sql_insertable!(
-T_RHSTU_CONSULTA {
-    ID_UNID_HOSPITAL: u32,
-    ID_CONSULTA: u32,
-    ID_PACIENTE: u32,
-    ID_FUNC: u32,
-    DT_HR_CONSULTA: String,
-    NR_CONSULTORIO: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String
-},
-
-T_RHSTU_FORMA_PAGAMENTO {
-    ID_FORMA_PAGTO: u32,
-    NM_FORMA_PAGTO: String,
-    DS_FORMA_PAGTO: String,
-    ST_FORMA_PAGTO: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String
-},
-
-T_RHSTU_CONSULTA_FORMA_PAGTO {
-    ID_CONSULTA_FORMA_PAGTO: u32,
-    ID_UNID_HOSPITAL: u32,
-    ID_CONSULTA: u32,
-    ID_PACIENTE_PS: u32,
-    ID_FORMA_PAGTO: u32,
-    DT_PAGTO_CONSULTA: String,
-    ST_PAGTO_CONSULTA: String,
-    DT_CADASTRO: String,
-    NM_USUARIO: String
-}
+    T_RHSTU_CONSULTA {
+        ID_UNID_HOSPITAL: u32,
+        ID_CONSULTA: u32,
+        ID_PACIENTE: u32,
+        ID_FUNC: u32,
+        DT_HR_CONSULTA: String,
+        NR_CONSULTORIO: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    T_RHSTU_FORMA_PAGAMENTO {
+        ID_FORMA_PAGTO: u32,
+        NM_FORMA_PAGTO: String,
+        DS_FORMA_PAGTO: String,
+        ST_FORMA_PAGTO: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    },
+    T_RHSTU_CONSULTA_FORMA_PAGTO {
+        ID_CONSULTA_FORMA_PAGTO: u32,
+        ID_UNID_HOSPITAL: u32,
+        ID_CONSULTA: u32,
+        ID_PACIENTE_PS: u32,
+        ID_FORMA_PAGTO: u32,
+        DT_PAGTO_CONSULTA: String,
+        ST_PAGTO_CONSULTA: String,
+        DT_CADASTRO: String,
+        NM_USUARIO: String
+    }
 );
 
 pub(crate) async fn generate_consultations(
@@ -153,7 +152,7 @@ pub(crate) async fn generate_consultation_payment_methods(
         pb.inc(1); // Increment the progress bar
         main_pb.inc(1);
     }
-    
+
     let generator = SqlGenerator::new(consultation_payment_methods.clone());
     generator.write_to_file();
 

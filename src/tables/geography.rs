@@ -1,4 +1,3 @@
-use csv::Writer;
 use fake::{
     faker::address::en::{StreetName, ZipCode},
     Fake,
@@ -7,7 +6,7 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::seq::SliceRandom;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     common::{fetch_data, ProgressBarHelper},
@@ -57,10 +56,6 @@ const CREATED_BY: &str = "1";
 
 fn current_timestamp() -> String {
     chrono::Local::now().to_string()
-}
-
-fn create_csv_writer(path: &str) -> Result<Writer<File>, csv::Error> {
-    csv::Writer::from_path(path)
 }
 
 pub(crate) async fn generate_states(

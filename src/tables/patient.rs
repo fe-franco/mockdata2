@@ -1,113 +1,99 @@
 use crate::common::{random_br_phone, random_cpf, random_rg, ProgressBarHelper};
+use crate::define_and_impl_sql_insertable;
+use crate::sql_generator::SqlGenerator;
 use crate::tables::geography::{get_ddds, TRHSTU_LOGRADOURO};
-
 use fake::faker::internet::en::FreeEmail;
 use fake::{faker::chrono::en::Date, faker::name::en::Name, Fake};
 use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Patient {
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) NM_PACIENTE: String,
-    pub(crate) NR_CPF: String,
-    pub(crate) NM_RG: String,
-    pub(crate) DT_NASCIMENTO: String,
-    pub(crate) FL_SEXO_BIOLOGICO: String,
-    pub(crate) DS_ESCOLARIDADE: String,
-    pub(crate) DS_ESTADO_CIVIL: String,
-    pub(crate) NM_GRUPO_SANGUINEO: String,
-    pub(crate) NR_ALTURA: String,
-    pub(crate) NR_PESO: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct ContactType {
-    pub(crate) ID_TIPO_CONTATO: u32,
-    pub(crate) NM_TIPO_CONTATO: String,
-    pub(crate) DT_INICIO: String,
-    pub(crate) DT_FIM: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Contact {
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) ID_CONTATO: u32,
-    pub(crate) ID_TIPO_CONTATO: u32,
-    pub(crate) NM_CONTATO: String,
-    pub(crate) NR_DDI: String,
-    pub(crate) NR_DDD: String,
-    pub(crate) NR_TELEFONE: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Email {
-    pub(crate) ID_EMAIL: u32,
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) DS_EMAIL: String,
-    pub(crate) TP_EMAIL: String,
-    pub(crate) ST_EMAIL: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct Telephone {
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) ID_TELEFONE: u32,
-    pub(crate) NR_DDI: String,
-    pub(crate) NR_DDD: String,
-    pub(crate) NR_TELEFONE: u32,
-    pub(crate) TP_TELEFONE: String,
-    pub(crate) ST_TELEFONE: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct PatientAddress {
-    pub(crate) ID_ENDERECO: u32,
-    pub(crate) ID_PACIENTE: u32,
-    pub(crate) ID_LOGRADOURO: u32,
-    pub(crate) NR_LOGRADOURO: String,
-    pub(crate) DS_COMPLEMENTO_NUMERO: String,
-    pub(crate) DS_PONTO_REFERENCIA: String,
-    pub(crate) DT_INICIO: String,
-    pub(crate) DT_FIM: String,
-    pub(crate) DT_CADASTRO: String,
-    pub(crate) NM_USUARIO: String,
-}
+define_and_impl_sql_insertable!(
+    T_RHSTU_PACIENTE {
+        pub(crate) ID_PACIENTE: u32,
+        pub(crate) NM_PACIENTE: String,
+        pub(crate) NR_CPF: String,
+        pub(crate) NM_RG: String,
+        pub(crate) DT_NASCIMENTO: String,
+        pub(crate) FL_SEXO_BIOLOGICO: String,
+        pub(crate) DS_ESCOLARIDADE: String,
+        pub(crate) DS_ESTADO_CIVIL: String,
+        pub(crate) NM_GRUPO_SANGUINEO: String,
+        pub(crate) NR_ALTURA: String,
+        pub(crate) NR_PESO: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    },
+    T_RHSTU_TIPO_CONTATO {
+        pub(crate) ID_TIPO_CONTATO: u32,
+        pub(crate) NM_TIPO_CONTATO: String,
+        pub(crate) DT_INICIO: String,
+        pub(crate) DT_FIM: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    },
+    T_RHSTU_CONTATO_PACIENTE {
+        pub(crate) ID_PACIENTE: u32,
+        pub(crate) ID_CONTATO: u32,
+        pub(crate) ID_TIPO_CONTATO: u32,
+        pub(crate) NM_CONTATO: String,
+        pub(crate) NR_DDI: String,
+        pub(crate) NR_DDD: String,
+        pub(crate) NR_TELEFONE: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    },
+    T_RHSTU_EMAIL_PACIENTE {
+        pub(crate) ID_EMAIL: u32,
+        pub(crate) ID_PACIENTE: u32,
+        pub(crate) DS_EMAIL: String,
+        pub(crate) TP_EMAIL: String,
+        pub(crate) ST_EMAIL: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    },
+    T_RHSTU_TELEFONE_PACIENTE {
+        pub(crate) ID_PACIENTE: u32,
+        pub(crate) ID_TELEFONE: u32,
+        pub(crate) NR_DDI: String,
+        pub(crate) NR_DDD: String,
+        pub(crate) NR_TELEFONE: u32,
+        pub(crate) TP_TELEFONE: String,
+        pub(crate) ST_TELEFONE: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    },
+    T_RHSTU_ENDERECO_PACIENTE {
+        pub(crate) ID_ENDERECO: u32,
+        pub(crate) ID_PACIENTE: u32,
+        pub(crate) ID_LOGRADOURO: u32,
+        pub(crate) NR_LOGRADOURO: String,
+        pub(crate) DS_COMPLEMENTO_NUMERO: String,
+        pub(crate) DS_PONTO_REFERENCIA: String,
+        pub(crate) DT_INICIO: String,
+        pub(crate) DT_FIM: String,
+        pub(crate) DT_CADASTRO: String,
+        pub(crate) NM_USUARIO: String
+    }
+);
 
 pub(crate) async fn generate_patients(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) {
-    let mut writer = csv::Writer::from_path("data/patient.csv").unwrap();
-
     let pb_helper = ProgressBarHelper::new(m, total, "Patients:".to_string());
     let pb = &pb_helper.pb;
 
-    let patients: Vec<Patient> = (0..total)
+    let patients: Vec<T_RHSTU_PACIENTE> = (0..total)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
+
             let mut rng = rand::thread_rng();
-            Patient {
+            T_RHSTU_PACIENTE {
                 ID_PACIENTE: i as u32,
                 NM_PACIENTE: Name().fake(),
                 NR_CPF: random_cpf(),
@@ -134,11 +120,8 @@ pub(crate) async fn generate_patients(
         })
         .collect();
 
-    for patient in patients {
-        writer.serialize(&patient).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(patients);
+    generator.write_to_file();
 
     pb_helper.finish();
 }
@@ -147,17 +130,18 @@ pub(crate) async fn generate_contact_types(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<ContactType> {
-    let mut writer = csv::Writer::from_path("data/contact_type.csv").unwrap();
-
+) -> Vec<T_RHSTU_TIPO_CONTATO> {
     let pb_helper = ProgressBarHelper::new(m, total, "Contact types:".to_string());
     let pb = &pb_helper.pb;
 
-    let contact_types: Vec<ContactType> = (0..total)
+    let contact_types: Vec<T_RHSTU_TIPO_CONTATO> = (0..total)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
+
             let mut rng = rand::thread_rng();
-            ContactType {
+            T_RHSTU_TIPO_CONTATO {
                 ID_TIPO_CONTATO: i as u32,
                 // pick a random emergency contact type relationship to the patient
                 NM_TIPO_CONTATO: ["Pessoal", "Trabalho", "Emergência"]
@@ -172,11 +156,8 @@ pub(crate) async fn generate_contact_types(
         })
         .collect();
 
-    for contact_type in &contact_types {
-        writer.serialize(contact_type).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(contact_types.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -185,21 +166,22 @@ pub(crate) async fn generate_contact_types(
 
 pub(crate) async fn generate_patient_contacts(
     total: usize,
-    contact_types: Vec<ContactType>,
+    contact_types: Vec<T_RHSTU_TIPO_CONTATO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Contact> {
-    let mut writer = csv::Writer::from_path("data/contact.csv").unwrap();
-
+) -> Vec<T_RHSTU_CONTATO_PACIENTE> {
     let pb_helper = ProgressBarHelper::new(m, total, "Patient contacts:".to_string());
     let pb = &pb_helper.pb;
 
-    let contacts: Vec<Contact> = (0..total)
+    let contacts: Vec<T_RHSTU_CONTATO_PACIENTE> = (0..total)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
+
             let mut rng = rand::thread_rng();
             let contact_type = contact_types.choose(&mut rng).unwrap();
-            Contact {
+            T_RHSTU_CONTATO_PACIENTE {
                 ID_PACIENTE: i as u32,
                 ID_CONTATO: i as u32,
                 ID_TIPO_CONTATO: contact_type.ID_TIPO_CONTATO,
@@ -213,11 +195,8 @@ pub(crate) async fn generate_patient_contacts(
         })
         .collect();
 
-    for contact in &contacts {
-        writer.serialize(contact).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(contacts.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -228,17 +207,18 @@ pub(crate) async fn generate_emails(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Email> {
-    let mut writer = csv::Writer::from_path("data/email.csv").unwrap();
-
+) -> Vec<T_RHSTU_EMAIL_PACIENTE> {
     let pb_helper = ProgressBarHelper::new(m, total, "Patient emails:".to_string());
     let pb = &pb_helper.pb;
 
-    let emails: Vec<Email> = (0..total)
+    let emails: Vec<T_RHSTU_EMAIL_PACIENTE> = (0..total)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
             let mut rng = rand::thread_rng();
-            Email {
+
+            T_RHSTU_EMAIL_PACIENTE {
                 ID_EMAIL: i as u32,
                 ID_PACIENTE: i as u32,
                 DS_EMAIL: FreeEmail().fake(),
@@ -253,11 +233,8 @@ pub(crate) async fn generate_emails(
         })
         .collect();
 
-    for email in &emails {
-        writer.serialize(email).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(emails.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -268,19 +245,21 @@ pub(crate) async fn generate_telephones(
     total: usize,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<Telephone> {
-    let mut writer = csv::Writer::from_path("data/telephone.csv").unwrap();
-
+) -> Vec<T_RHSTU_TELEFONE_PACIENTE> {
     let pb_helper = ProgressBarHelper::new(m, total, "Patient telephones:".to_string());
     let pb = &pb_helper.pb;
 
     let ddds = get_ddds().unwrap();
 
-    let telephones: Vec<Telephone> = (0..total)
+    let telephones: Vec<T_RHSTU_TELEFONE_PACIENTE> = (0..total)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
+
             let mut rng = rand::thread_rng();
-            Telephone {
+
+            T_RHSTU_TELEFONE_PACIENTE {
                 ID_PACIENTE: i as u32,
                 ID_TELEFONE: i as u32,
                 NR_DDI: rng.gen_range(1..100).to_string(),
@@ -297,11 +276,8 @@ pub(crate) async fn generate_telephones(
         })
         .collect();
 
-    for telephone in &telephones {
-        writer.serialize(telephone).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(telephones.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 
@@ -313,19 +289,20 @@ pub(crate) async fn generate_patients_addresses(
     address: Vec<TRHSTU_LOGRADOURO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
-) -> Vec<PatientAddress> {
-    let mut writer = csv::Writer::from_path("data/patient_address.csv").unwrap();
-
+) -> Vec<T_RHSTU_ENDERECO_PACIENTE> {
     let pb_helper = ProgressBarHelper::new(m, patients, "Patient addresses:".to_string());
     let pb = &pb_helper.pb;
 
-    let patient_addresses: Vec<PatientAddress> = (0..patients)
+    let patient_addresses: Vec<T_RHSTU_ENDERECO_PACIENTE> = (0..patients)
         .into_par_iter()
         .map(|i| {
+            pb.inc(1); // Increment the progress bar
+            main_pb.inc(1);
+
             let mut rng = rand::thread_rng();
             let chosen_address = address.choose(&mut rng).unwrap().clone();
 
-            PatientAddress {
+            T_RHSTU_ENDERECO_PACIENTE {
                 ID_ENDERECO: chosen_address.ID_LOGRADOURO,
                 ID_PACIENTE: i as u32,
                 ID_LOGRADOURO: chosen_address.ID_LOGRADOURO,
@@ -340,11 +317,8 @@ pub(crate) async fn generate_patients_addresses(
         })
         .collect();
 
-    for patient_address in &patient_addresses {
-        writer.serialize(patient_address).unwrap();
-        pb.inc(1); // Increment the progress bar
-        main_pb.inc(1);
-    }
+    let generator = SqlGenerator::new(patient_addresses.clone());
+    generator.write_to_file();
 
     pb_helper.finish();
 

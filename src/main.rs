@@ -98,8 +98,7 @@ async fn main() -> Result<(), anyhow::Error> {
     ));
     let medicines_task = tokio::spawn(get_medicines(m.clone(), pb.clone()));
 
-    let (states, cities, neighborhoods) =
-        tokio::try_join!(states_task, cities_task, neighborhoods_task)?;
+    let (cities, neighborhoods) = tokio::try_join!(cities_task, neighborhoods_task)?;
 
     let cities = cities?;
     let neighborhoods = neighborhoods?;
@@ -239,6 +238,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // await all tasks
     tokio::try_join!(
+        states_task,
         patients_task,
         patient_address_task,
         patient_contact,
