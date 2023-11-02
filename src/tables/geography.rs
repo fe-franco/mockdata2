@@ -1,7 +1,4 @@
-use fake::{
-    faker::address::en::{StreetName, ZipCode},
-    Fake,
-};
+use fake::{faker::address::en::StreetName, Fake};
 use indicatif::{MultiProgress, ProgressBar};
 use rand::seq::SliceRandom;
 use reqwest::Client;

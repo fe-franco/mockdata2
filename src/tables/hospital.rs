@@ -1,10 +1,9 @@
-use crate::common::{current_timestamp, random_cep, random_cpf, random_rg, ProgressBarHelper};
+use crate::common::{current_timestamp, random_cpf, random_rg, ProgressBarHelper};
 use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
-use crate::tables::geography::{T_RHSTU_BAIRRO, T_RHSTU_CIDADE};
 use fake::{
     faker::{
-        address::en::{BuildingNumber, StreetName},
+        address::en::{BuildingNumber, SecondaryAddress, StreetName},
         company::en::CompanyName,
         name::en::Name,
     },
@@ -14,6 +13,8 @@ use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::sync::{Arc, Mutex};
+
+use super::geography::T_RHSTU_LOGRADOURO;
 
 define_and_impl_sql_insertable!(
     T_RHSTU_UNID_HOSPITALAR {
@@ -30,12 +31,14 @@ define_and_impl_sql_insertable!(
         NM_USUARIO: String
     },
     T_RHSTU_ENDERECO_UNIDHOSP {
+        ID_END_UNIDHOSP: u64,
         ID_UNID_HOSPITAL: u64,
-        ID_BAIRRO: u64,
-        ID_CIDADE: u64,
-        ID_ESTADO: u64,
-        NR_CEP: u64,
-        NR_DDD: u64,
+        ID_LOGRADOURO: u64,
+        NR_LOGRADOURO: u64,
+        DS_COMPLEMENTO_NUMERO: String,
+        DS_PONTO_REFERENCIA: String,
+        DT_INICIO: String,
+        DT_FIM: String,
         DT_CADASTRO: String,
         NM_USUARIO: String
     },
@@ -88,9 +91,9 @@ pub(crate) async fn generate_hospital(
             NM_UNID_HOSPITALAR: CompanyName().fake(),
             NM_RAZAO_SOCIAL_UNID_HOSP: CompanyName().fake(),
             DT_FUNDACAO: current_timestamp(),
-            NR_LOGRADOURO: rng.gen_range(100..1000) as u64,
-            DS_COMPLEMENTO_NUMERO: BuildingNumber().fake(),
-            DS_PONTO_REFERENCIA: BuildingNumber().fake(),
+            NR_LOGRADOURO: rng.gen_range(1..1000) as u64,
+            DS_COMPLEMENTO_NUMERO: SecondaryAddress().fake(),
+            DS_PONTO_REFERENCIA: SecondaryAddress().fake(),
             DT_INICIO: current_timestamp(),
             DT_TERMINO: current_timestamp(),
             DT_CADASTRO: current_timestamp(),
@@ -114,8 +117,7 @@ pub(crate) async fn generate_hospital(
 
 pub(crate) async fn generate_hospital_address(
     total: usize,
-    trhstu_bairros: Vec<T_RHSTU_BAIRRO>,
-    cities: Vec<T_RHSTU_CIDADE>,
+    address: Vec<T_RHSTU_LOGRADOURO>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> usize {
@@ -129,21 +131,15 @@ pub(crate) async fn generate_hospital_address(
     let mut hospitals_addresses: Vec<T_RHSTU_ENDERECO_UNIDHOSP> = Vec::new();
 
     for i in 0..total {
-        let trhstu_bairro = trhstu_bairros.choose(&mut rng).unwrap().clone();
-
-        // find TRHSTU_CIDADE and state ids from TRHSTU_BAIRRO
-        let trhstu_cidade = cities
-            .iter()
-            .find(|&c| c.ID_CIDADE == trhstu_bairro.ID_CIDADE)
-            .unwrap();
-
         let hospital_address = T_RHSTU_ENDERECO_UNIDHOSP {
             ID_UNID_HOSPITAL: i as u64,
-            ID_BAIRRO: trhstu_bairro.ID_BAIRRO,
-            ID_CIDADE: trhstu_cidade.ID_CIDADE,
-            ID_ESTADO: trhstu_cidade.ID_ESTADO,
-            NR_CEP: random_cep(),
-            NR_DDD: trhstu_cidade.NR_DDD.clone(),
+            ID_END_UNIDHOSP: i as u64,
+            ID_LOGRADOURO: address[i].ID_LOGRADOURO,
+            NR_LOGRADOURO: rng.gen_range(1..1000) as u64,
+            DS_COMPLEMENTO_NUMERO: BuildingNumber().fake(),
+            DS_PONTO_REFERENCIA: BuildingNumber().fake(),
+            DT_INICIO: current_timestamp(),
+            DT_FIM: current_timestamp(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: Name().fake(),
         };

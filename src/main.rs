@@ -98,12 +98,11 @@ async fn main() -> Result<(), anyhow::Error> {
     ));
     let medicines_task = tokio::spawn(get_medicines(m.clone(), pb.clone()));
 
-    let (cities, neighborhoods) = tokio::try_join!(cities_task, neighborhoods_task)?;
+    let neighborhoods = tokio::try_join!(neighborhoods_task)?;
 
-    let cities = cities?;
-    let neighborhoods = neighborhoods?;
+    let neighborhoods = neighborhoods.0?;
 
-    let address = generate_address(
+    let address: Vec<tables::geography::T_RHSTU_LOGRADOURO> = generate_address(
         &neighborhoods,
         T_RHSTU_LOGRADOURO_ROWS as usize,
         m.clone(),
@@ -157,8 +156,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let hospital_address_taks = tokio::spawn(tables::hospital::generate_hospital_address(
         T_RHSTU_ENDERECO_UNIDHOSP_ROWS as usize,
-        neighborhoods,
-        cities,
+        address,
         m.clone(),
         pb.clone(),
     ));
@@ -238,6 +236,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // await all tasks
     let _ = tokio::try_join!(
+        cities_task,
         states_task,
         patients_task,
         patient_address_task,
