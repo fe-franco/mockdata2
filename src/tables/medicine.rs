@@ -84,7 +84,7 @@ pub(crate) async fn get_medicines(
 
     let locked_results = aggregated_results.lock().unwrap();
     
-    let pb_helper = ProgressBarHelper::new(m, locked_results.len(), "Medicines:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, locked_results.len() * 2, "Medicines:".to_string());
     let pb = &pb_helper.pb;
     
 
@@ -96,7 +96,7 @@ pub(crate) async fn get_medicines(
     }
 
     let generator = SqlGenerator::new(medicines.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -185,7 +185,7 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) {
-    let pb_helper = ProgressBarHelper::new(m, total, "Medical Prescription:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Medical Prescription:".to_string());
     let pb = &pb_helper.pb;
     let mut prescripitions: Vec<T_RHSTU_PRESCRICAO_MEDICA> = Vec::new();
 
@@ -212,7 +212,7 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
     }
 
     let generator = SqlGenerator::new(prescripitions.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     
     pb_helper.finish();

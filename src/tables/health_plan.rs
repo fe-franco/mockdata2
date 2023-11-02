@@ -48,7 +48,7 @@ pub(crate) fn generate_health_plans(
     // println!("Generating health plans...");
     let mut health_plans: Vec<T_RHSTU_PLANO_SAUDE> = Vec::with_capacity(total);
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Health Plans:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Health Plans:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
@@ -72,7 +72,7 @@ pub(crate) fn generate_health_plans(
     }
 
     let generator = SqlGenerator::new(health_plans.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -90,7 +90,7 @@ pub(crate) async fn generate_patient_health_plans(
     let mut patient_health_plans: Vec<T_RHSTU_PACIENTE_PLANO_SAUDE> = Vec::with_capacity(total);
     let mut rng = rand::thread_rng();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Patient Health Plans:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Patient Health Plans:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
@@ -114,7 +114,7 @@ pub(crate) async fn generate_patient_health_plans(
     }
 
     let generator = SqlGenerator::new(patient_health_plans.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 

@@ -54,7 +54,7 @@ pub(crate) async fn generate_consultations(
     let mut consultations: Vec<T_RHSTU_CONSULTA> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Consultations:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Consultations:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
@@ -75,7 +75,7 @@ pub(crate) async fn generate_consultations(
     }
 
     let generator = SqlGenerator::new(consultations.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
     consultations
@@ -89,7 +89,7 @@ pub(crate) async fn generate_payment_methods(
     // println!("Generating payment methods...");
     let mut payment_methods: Vec<T_RHSTU_FORMA_PAGAMENTO> = Vec::new();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Payment Methods:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Payment Methods:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
@@ -111,7 +111,7 @@ pub(crate) async fn generate_payment_methods(
     }
 
     let generator = SqlGenerator::new(payment_methods.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
     payment_methods
@@ -127,7 +127,8 @@ pub(crate) async fn generate_consultation_payment_methods(
     // println!("Generating consultation payment methods...");
     let mut rng = rand::thread_rng();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Consultation Payment Methods:".to_string());
+    let pb_helper =
+        ProgressBarHelper::new(m, total * 2, "Consultation Payment Methods:".to_string());
     let pb = &pb_helper.pb;
     let mut consultation_payment_methods: Vec<T_RHSTU_CONSULTA_FORMA_PAGTO> = Vec::new();
 
@@ -154,7 +155,7 @@ pub(crate) async fn generate_consultation_payment_methods(
     }
 
     let generator = SqlGenerator::new(consultation_payment_methods.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 }

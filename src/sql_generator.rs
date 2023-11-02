@@ -1,3 +1,4 @@
+use indicatif::ProgressBar;
 use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
@@ -5,7 +6,8 @@ use std::io::Write;
 
 // Define the SqlInsertable trait
 pub(crate) trait SqlInsertable {
-    fn to_insert_sql(&self, table_name: &str) -> String;
+    fn to_insert_fields(&self) -> Vec<String>;
+    fn to_insert_values(&self) -> Vec<String>;
 }
 
 #[macro_export]
@@ -19,24 +21,19 @@ macro_rules! define_and_impl_sql_insertable {
             }
 
             impl crate::sql_generator::SqlInsertable for $struct_name {
-                fn to_insert_sql(&self, table_name: &str) -> String {
-                    let fields = vec![$(stringify!($field_name)),*];
-                    let values = vec![$(format!("{:?}", self.$field_name)),*];
-                    // remove double quotes from values and replace with single quotes if it does not start with TO_DATE
-                    let values = values.iter().map(|v| {
-                        if v.starts_with("\"TO_DATE") {
-                            v.replace("\"", "")
-                        } else {
-                            v.replace("'", "").replace("\"", "'")
-                        }
-                    }).collect::<Vec<String>>();
+                fn to_insert_fields(&self) -> Vec<String> {
+                    vec![$(stringify!($field_name).to_string()),*]
+                }
 
-                    format!(
-                        "INSERT INTO {} ({}) VALUES ({});",
-                        table_name,
-                        fields.join(", "),
-                        values.join(", ")
-                    )
+                fn to_insert_values(&self) -> Vec<String> {
+                    vec![$({
+                        let value = format!("{:?}", self.$field_name);
+                        if value.starts_with("\"TO_DATE") {
+                            value.replace("\"", "")
+                        } else {
+                            value.replace("'", "").replace("\"", "'")
+                        }
+                    }),*]
                 }
             }
         )*
@@ -52,19 +49,17 @@ impl<T> SqlGenerator<T> {
         SqlGenerator { data }
     }
 
-    fn get_struct_name(&self) -> String {
+    fn get_struct_name(&self) -> &str {
         let full_name = std::any::type_name::<T>();
-        full_name
-            .split("::")
-            .last()
-            .unwrap_or(full_name)
-            .to_string()
+        full_name.split("::").last().unwrap_or(full_name)
     }
 
-    pub(crate) fn write_to_file(&self) -> std::io::Result<()>
+    pub(crate) fn write_to_file(&self, pb: &ProgressBar) -> std::io::Result<()>
     where
         T: SqlInsertable,
     {
+        const CHUNK_SIZE: usize = 200;
+
         let table_name = self.get_struct_name();
         let dir = "data";
         let filename = format!("{}/{}.sql", dir, table_name);
@@ -72,8 +67,34 @@ impl<T> SqlGenerator<T> {
         let file = File::create(&filename)?;
         let mut writer = BufWriter::new(file);
 
-        for item in &self.data {
-            writeln!(writer, "{}", item.to_insert_sql(&table_name))?;
+        if self.data.is_empty() {
+            return Ok(());
+        }
+
+        for chunk in self.data.chunks(CHUNK_SIZE) {
+            // Write the initial part of the INSERT statement
+            let first_item = &chunk[0];
+            let fields: Vec<_> = first_item.to_insert_fields();
+            writeln!(
+                writer,
+                "INSERT INTO {} ({}) VALUES",
+                table_name,
+                fields.join(", ")
+            )?;
+
+            // Write the values for each item in the chunk
+            for (index, item) in chunk.iter().enumerate() {
+                let values: Vec<_> = item.to_insert_values();
+                write!(writer, "({})", values.join(", "))?;
+
+                if index < chunk.len() - 1 {
+                    writeln!(writer, ",")?;
+                } else {
+                    writeln!(writer, ";")?;
+                }
+
+                pb.inc(1);
+            }
         }
 
         Ok(())

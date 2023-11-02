@@ -64,7 +64,7 @@ pub(crate) async fn generate_states(
     let mut len: usize = 0;
     let mut states: Vec<T_RHSTU_ESTADO> = Vec::with_capacity(json.len());
 
-    let pb_helper = ProgressBarHelper::new(m, json.len(), "States:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, json.len() * 2, "States:".to_string());
     let pb = &pb_helper.pb;
 
     for state in json.iter() {
@@ -83,7 +83,7 @@ pub(crate) async fn generate_states(
 
     // Use SqlGenerator to generate SQL and write to a file
     let generator = SqlGenerator::new(states);
-    generator.write_to_file()?;
+    generator.write_to_file(pb)?;
 
     pb_helper.finish();
 
@@ -103,7 +103,7 @@ pub(crate) async fn generate_cities(
 
     let mut cities = Vec::new();
 
-    let pb_helper = ProgressBarHelper::new(m, json.len(), "Cities:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, json.len() *2, "Cities:".to_string());
     let pb = &pb_helper.pb;
 
     for municipio in json.iter() {
@@ -126,7 +126,7 @@ pub(crate) async fn generate_cities(
     }
 
     let generator = SqlGenerator::new(cities.clone());
-    generator.write_to_file()?;
+    generator.write_to_file(pb)?;
 
     pb_helper.finish();
 
@@ -173,7 +173,7 @@ pub(crate) async fn generate_neighborhoods(
 
     let mut neighborhoods: Vec<T_RHSTU_BAIRRO> = Vec::new();
 
-    let pb_helper = ProgressBarHelper::new(m, json.len(), "Neighborhoods:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, json.len() * 2, "Neighborhoods:".to_string());
     let pb = &pb_helper.pb;
 
     for neighborhood in json.iter() {
@@ -202,7 +202,7 @@ pub(crate) async fn generate_neighborhoods(
     }
 
     let generator = SqlGenerator::new(neighborhoods.clone());
-    generator.write_to_file()?;
+    generator.write_to_file(pb)?;
 
     pb_helper.finish();
 
@@ -219,7 +219,7 @@ pub(crate) fn generate_address(
 
     let mut addresses: Vec<T_RHSTU_LOGRADOURO> = Vec::new();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Addresses:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Addresses:".to_string());
     let pb = &pb_helper.pb;
 
     for i in 0..total {
@@ -246,7 +246,7 @@ pub(crate) fn generate_address(
     }
 
     let generator = SqlGenerator::new(addresses.clone());
-    generator.write_to_file()?;
+    generator.write_to_file(pb)?;
 
     pb_helper.finish();
 

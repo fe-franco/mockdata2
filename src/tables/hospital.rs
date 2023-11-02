@@ -5,7 +5,6 @@ use crate::tables::geography::{T_RHSTU_BAIRRO, T_RHSTU_CIDADE};
 use fake::{
     faker::{
         address::en::{BuildingNumber, StreetName},
-        chrono::en::Date,
         company::en::CompanyName,
         name::en::Name,
     },
@@ -77,7 +76,7 @@ pub(crate) async fn generate_hospital(
 ) -> usize {
     let mut len = 0;
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Hospitals:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Hospitals:".to_string());
     let pb = &pb_helper.pb;
 
     let mut hospitals: Vec<T_RHSTU_UNID_HOSPITALAR> = Vec::new();
@@ -105,7 +104,7 @@ pub(crate) async fn generate_hospital(
     }
 
     let generator = SqlGenerator::new(hospitals);
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -123,7 +122,7 @@ pub(crate) async fn generate_hospital_address(
 
     let mut rng = rand::thread_rng();
 
-    let pb_helper = ProgressBarHelper::new(m, total, "T_RHSTU_ENDERECO_UNIDHOSP:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "T_RHSTU_ENDERECO_UNIDHOSP:".to_string());
     let pb = &pb_helper.pb;
 
     let mut hospitals_addresses: Vec<T_RHSTU_ENDERECO_UNIDHOSP> = Vec::new();
@@ -156,7 +155,7 @@ pub(crate) async fn generate_hospital_address(
     }
 
     let generator = SqlGenerator::new(hospitals_addresses);
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -168,7 +167,7 @@ pub(crate) async fn generate_employee(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<u32> {
-    let pb_helper = ProgressBarHelper::new(m, total, "Employees:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Employees:".to_string());
     let pb = &pb_helper.pb;
 
     let employees: Vec<T_RHSTU_FUNCIONARIO> = (0..total)
@@ -197,7 +196,7 @@ pub(crate) async fn generate_employee(
         .collect();
 
     let generator = SqlGenerator::new(employees.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -216,7 +215,7 @@ pub(crate) async fn generate_doctor(
         panic!("Not enough employees to generate doctors");
     }
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Doctors:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Doctors:".to_string());
     let pb = &pb_helper.pb;
 
     let mut rng = rand::thread_rng(); // Reuse the random number generator
@@ -238,7 +237,7 @@ pub(crate) async fn generate_doctor(
     }
 
     let generator = SqlGenerator::new(doctors);
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     // Remove used employee IDs after the loop to avoid shifting elements multiple times
     employee_ids_guard.drain(0..total);
@@ -260,7 +259,7 @@ pub(crate) async fn generate_driver(
         panic!("Not enough employees to generate drivers");
     }
 
-    let pb_helper = ProgressBarHelper::new(m, total, "Drivers:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Drivers:".to_string());
     let pb = &pb_helper.pb;
 
     let mut rng = rand::thread_rng(); // Reuse the random number generator
@@ -286,7 +285,7 @@ pub(crate) async fn generate_driver(
     }
 
     let generator = SqlGenerator::new(drivers);
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     // Remove used employee IDs after the loop to avoid shifting elements multiple times
     employee_ids_guard.drain(0..total);

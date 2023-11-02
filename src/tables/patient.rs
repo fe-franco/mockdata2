@@ -3,7 +3,7 @@ use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
 use crate::tables::geography::{get_ddds, T_RHSTU_LOGRADOURO};
 use fake::faker::internet::en::FreeEmail;
-use fake::{faker::chrono::en::Date, faker::name::en::Name, Fake};
+use fake::{faker::name::en::Name, Fake};
 use indicatif::{MultiProgress, ProgressBar};
 use rand::{seq::SliceRandom, Rng};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -83,7 +83,7 @@ pub(crate) async fn generate_patients(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) {
-    let pb_helper = ProgressBarHelper::new(m, total, "Patients:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Patients:".to_string());
     let pb = &pb_helper.pb;
 
     let patients: Vec<T_RHSTU_PACIENTE> = (0..total)
@@ -121,7 +121,7 @@ pub(crate) async fn generate_patients(
         .collect();
 
     let generator = SqlGenerator::new(patients);
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 }
@@ -131,7 +131,7 @@ pub(crate) async fn generate_contact_types(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_TIPO_CONTATO> {
-    let pb_helper = ProgressBarHelper::new(m, total, "Contact types:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Contact types:".to_string());
     let pb = &pb_helper.pb;
 
     let contact_types: Vec<T_RHSTU_TIPO_CONTATO> = (0..total)
@@ -157,7 +157,7 @@ pub(crate) async fn generate_contact_types(
         .collect();
 
     let generator = SqlGenerator::new(contact_types.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -170,7 +170,7 @@ pub(crate) async fn generate_patient_contacts(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_CONTATO_PACIENTE> {
-    let pb_helper = ProgressBarHelper::new(m, total, "Patient contacts:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Patient contacts:".to_string());
     let pb = &pb_helper.pb;
 
     let contacts: Vec<T_RHSTU_CONTATO_PACIENTE> = (0..total)
@@ -196,7 +196,7 @@ pub(crate) async fn generate_patient_contacts(
         .collect();
 
     let generator = SqlGenerator::new(contacts.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -208,7 +208,7 @@ pub(crate) async fn generate_emails(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_EMAIL_PACIENTE> {
-    let pb_helper = ProgressBarHelper::new(m, total, "Patient emails:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Patient emails:".to_string());
     let pb = &pb_helper.pb;
 
     let emails: Vec<T_RHSTU_EMAIL_PACIENTE> = (0..total)
@@ -234,7 +234,7 @@ pub(crate) async fn generate_emails(
         .collect();
 
     let generator = SqlGenerator::new(emails.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -246,7 +246,7 @@ pub(crate) async fn generate_telephones(
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> Vec<T_RHSTU_TELEFONE_PACIENTE> {
-    let pb_helper = ProgressBarHelper::new(m, total, "Patient telephones:".to_string());
+    let pb_helper = ProgressBarHelper::new(m, total * 2, "Patient telephones:".to_string());
     let pb = &pb_helper.pb;
 
     let ddds = get_ddds().unwrap();
@@ -277,7 +277,7 @@ pub(crate) async fn generate_telephones(
         .collect();
 
     let generator = SqlGenerator::new(telephones.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
@@ -318,7 +318,7 @@ pub(crate) async fn generate_patients_addresses(
         .collect();
 
     let generator = SqlGenerator::new(patient_addresses.clone());
-    let _ = generator.write_to_file();
+    let _ = generator.write_to_file(pb);
 
     pb_helper.finish();
 
