@@ -1,7 +1,7 @@
 use crate::common::{current_timestamp, random_cep, random_cpf, random_rg, ProgressBarHelper};
 use crate::define_and_impl_sql_insertable;
 use crate::sql_generator::SqlGenerator;
-use crate::tables::geography::{TRHSTU_BAIRRO, TRHSTU_CIDADE};
+use crate::tables::geography::{T_RHSTU_BAIRRO, T_RHSTU_CIDADE};
 use fake::{
     faker::{
         address::en::{BuildingNumber, StreetName},
@@ -114,8 +114,8 @@ pub(crate) async fn generate_hospital(
 
 pub(crate) async fn generate_hospital_address(
     total: usize,
-    trhstu_bairros: Vec<TRHSTU_BAIRRO>,
-    cities: Vec<TRHSTU_CIDADE>,
+    trhstu_bairros: Vec<T_RHSTU_BAIRRO>,
+    cities: Vec<T_RHSTU_CIDADE>,
     m: Arc<MultiProgress>,
     main_pb: Arc<ProgressBar>,
 ) -> usize {
