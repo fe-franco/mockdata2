@@ -89,6 +89,8 @@ impl<T> SqlGenerator<T> {
             writer.write_all(format!("commit;\n").as_bytes())?;
         }
 
+        writer.write_all(format!("select count(*) from {};\n", table_name).as_bytes())?;
+
         Ok(())
     }
 }
