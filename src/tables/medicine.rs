@@ -162,7 +162,7 @@ async fn process_category(
         for medicine in result.content {
             let medicine_data = T_RHSTU_MEDICAMENTO {
                 ID_MEDICAMENTO: medicine.idProduto,
-                NM_MEDICAMENTO: medicine.nomeProduto.substring(0, 50).to_string(),
+                NM_MEDICAMENTO: medicine.nomeProduto.substring(0, 49).to_string(),
                 DS_DETALHADA_MEDICAMENTO: medicine.expediente,
                 NR_CODIGO_BARRAS: medicine.numeroRegistro,
                 DT_CADASTRO: current_timestamp(),
