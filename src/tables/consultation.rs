@@ -144,7 +144,7 @@ pub(crate) async fn generate_consultation_payment_methods(
             ID_PACIENTE_PS: consultation.ID_PACIENTE,
             ID_FORMA_PAGTO: payment_method.ID_FORMA_PAGTO,
             DT_PAGTO_CONSULTA: current_timestamp(),
-            ST_PAGTO_CONSULTA: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
+            ST_PAGTO_CONSULTA: ["A", "C", "P"].choose(&mut rng).unwrap().to_string(),
             DT_CADASTRO: current_timestamp(),
             NM_USUARIO: "1".to_string(),
         };
