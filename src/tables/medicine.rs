@@ -29,7 +29,7 @@ define_and_impl_sql_insertable!(
         DS_POSOLOGIA: String,
         DS_VIA: String,
         DS_OBSERVACAO_USO: String,
-        QT_MEDICAMENTO: String,
+        QT_MEDICAMENTO: u64,
         NM_USUARIO: String,
         DT_CADASTRO: String
     }
@@ -200,7 +200,7 @@ pub(crate) async fn generate_medical_prescription(total: usize, medicines: Vec<T
             DS_POSOLOGIA: "DS_POSOLOGIA".to_string(),
             DS_VIA: "DS_VIA".to_string(),
             DS_OBSERVACAO_USO: "DS_OBSERVACAO_USO".to_string(),
-            QT_MEDICAMENTO: "QT_MEDICAMENTO".to_string(),
+            QT_MEDICAMENTO: rand::thread_rng().gen_range(1..100) as u64,
             NM_USUARIO: "NM_USUARIO".to_string(),
             DT_CADASTRO: current_timestamp(),
         };
