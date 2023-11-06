@@ -226,7 +226,7 @@ pub(crate) async fn generate_emails(
                     .choose(&mut rng)
                     .unwrap()
                     .to_string(),
-                ST_EMAIL: ["Ativo", "Inativo"].choose(&mut rng).unwrap().to_string(),
+                ST_EMAIL: ["A", "I"].choose(&mut rng).unwrap().to_string(),
                 DT_CADASTRO: current_timestamp(),
                 NM_USUARIO: 1.to_string(),
             }
