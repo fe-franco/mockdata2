@@ -265,7 +265,7 @@ pub(crate) async fn generate_telephones(
                 NR_DDI: rng.gen_range(1..100) as u64,
                 NR_DDD: *ddds.choose(&mut rng).unwrap(),
                 NR_TELEFONE: random_br_phone(),
-                TP_TELEFONE: ["Pessoal", "Trabalho"]
+                TP_TELEFONE: ["CELULAR", "COMERCIAL", "CONTATO OU RECADO", "RESIDENCIAL"]
                     .choose(&mut rng)
                     .unwrap()
                     .to_string(),

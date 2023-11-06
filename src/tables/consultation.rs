@@ -97,7 +97,7 @@ pub(crate) async fn generate_payment_methods(
             ID_FORMA_PAGTO: i as u64,
             NM_FORMA_PAGTO: Name().fake(),
             DS_FORMA_PAGTO: Name().fake(),
-            ST_FORMA_PAGTO: ["Ativo", "Inativo"]
+            ST_FORMA_PAGTO: ["A", "I"]
                 .choose(&mut rand::thread_rng())
                 .unwrap()
                 .to_string(),
